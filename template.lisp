@@ -1,0 +1,41 @@
+;;;2015 day x
+
+(in-package :aoc-20XX)
+
+(defparameter *day-number* x)
+(defparameter *input-name-template* "2025d~dinput.txt")
+
+(defparameter *test-input*
+  '())
+
+(defparameter *verbose* nil)
+
+(defun vformat (format-string &rest args)
+  "print to standard output only if *verbose* is true"
+  (when *verbose*
+    (apply #'format t format-string args)))
+
+(defun parse-input (lines)
+  )
+
+(defun p1 ()
+  ) 
+
+(defun p2 ()
+  )
+
+(defun run (parts-list data)
+  (dolist (part (a:ensure-list parts-list))
+    (ccase part
+      (1 (format t "~&Part 1: ~a" (p1 data)))
+      (2 (format t "~&Part 2: ~a" (p2 data))))))
+
+(defun main (&rest parts)
+  (let* ((infile-name (format nil *input-name-template* *day-number*))
+         (input-lines (uiop:read-file-lines infile-name))
+         (data (parse-input input-lines)))
+    (run parts data)))
+
+(defun test (&rest parts)
+  (let ((*verbose* t))
+    (run parts (parse-input *test-input*))))
