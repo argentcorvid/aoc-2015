@@ -4,4 +4,5 @@
 
 
 (defpackage #:aoc-2015
-  (:use #:cl))
+  (:use #:cl)
+  (:local-nicknames (#:a #:alexandria-2)))
