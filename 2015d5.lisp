@@ -18,8 +18,21 @@
 (defun has-pairs-p (str)
   (ppcre:scan "(..).*\\1" str))
 
+(defun hp-2 (str)
+  (declare (simple-string str))
+  (loop :for pat-start fixnum :from 0 :by 2 :below (- (length str) 4)
+        :for pat-end fixnum :=  (+ 2 pat-start)
+          :thereis (search str str
+                           :start1 pat-start :end1 pat-end
+                           :start2 pat-end)))
+
 (defun has-split-pair-p (str)
   (ppcre:scan "(.).\\1" str))
+
+(defun hsp-2 (str)
+  (declare (simple-string str))
+  (loop :for pat-start fixnum :from 0 :below (- (length str) 3)
+        :thereis (char= (schar str pat-start) (schar str (+ 2 pat-start)))))
 
 (defday 5
   :test-input '("ugknbfddgicrmopn"
