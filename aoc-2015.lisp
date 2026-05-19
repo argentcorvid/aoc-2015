@@ -14,24 +14,33 @@
                     ((:parse (&body parse-body)))
                     ((:p1-test (&body p1test-body)))
                     ((:p2-test (&body p2test-body)))
-                    test-input)
+                    test-input
+                    p1-test-expected
+                    p2-test-expected)
   "Define a set of functions and test data in package \"AOC-<*year*>\" for a given day of Advent of Code.
 day-number is a number
 any of the keyword parameters :p1 :p2 and :parse will define functions with the name \"DAY-<day-number>-<keyword>\"
-:test-input defines a global parameter variable \"*TEST-INPUT-D<day-number>*\""
+:test-input defines a local variable %test-input% for testing the examples, should be a list of separate test inputs
+:p<num>-test-expected defines local variables %p1-expect% or %p2-expect% for testing examples, also should be lists
+a global variable with name \"*DAY<day-number>INPUT*\" is defined containing the string \"<*year*>d<day-number>input.txt\""
   (let ((package (find-package (string-upcase (format nil "aoc-~d" *year*))))
-        (test-input-name "*TEST-INPUT-D~d*")
         (names-and-bodies (remove-if #'null (list (cons "DAY-~d-P1" p1-body)
                                                   (cons "DAY-~d-P2" p2-body)
                                                   (cons "DAY-~d-PARSE" parse-body)
                                                   (cons "DAY-~d-P1TEST" p1test-body)
                                                   (cons "DAY-~d-P2TEST" p2test-body))
                                      :key #'cdr)))
-    `(progn
-       (defparameter ,(intern (format nil test-input-name day-number) package) ,test-input)
-       ,@(mapcar (lambda (name/body)
-                   `(defun ,(intern (format nil (car name/body) day-number) package) (input) ,@(cdr name/body)))
-                 names-and-bodies))))
+    `(let ((%p1-expect% ,p1-test-expected)
+           (%p2-expect% ,p2-test-expected)
+           (%test-input% ,test-input))
+       (declare (ignorable %p1-expect% %p2-expect% %test-input%))
+       (progn
+         (defparameter ,(intern (format nil "*DAY~dINPUT*" day-number)) ,(format nil "~dd~dinput.txt" *year* day-number))
+         ,@(mapcar (lambda (name/body)
+                     `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
+                        (declare (ignorable input))
+                        ,@(cdr name/body)))
+                   names-and-bodies)))))
 
 (defun vformat (format-string &rest args)
   "print to standard output only if *verbose* is true"

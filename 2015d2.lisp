@@ -17,21 +17,19 @@
 
 (defday 2
   :test-input
-  '(("2x3x4"  58 34)
-    ("1x1x10" 43 14))
+  '("2x3x4"
+    "1x1x10")
+  :p1-test-expected '(58
+                      34)
+  :p2-test-expected '(43
+                      14)
   :parse ((mapcar (lambda (line)
                     (mapcar #'parse-integer (str:split #\x line)))
                   input))
   :p1 ((reduce #'+ (mapcar #'d2-needed-area (day-2-parse input))))
-  :p1-test ((destructuring-bind (lines expected ign)
-                (apply #'mapcar #'list input)
-              (declare (ignore ign))
-              (every #'= (mapcar #'d2-needed-area (day-2-parse lines))
-                     expected)))
+  :p1-test ((every #'= (mapcar #'d2-needed-area (day-2-parse %test-input%))
+                   %p1-expect%))
   :p2 ((reduce #'+ (mapcar #'d2-needed-ribbon (day-2-parse input))))
-  :p2-test ((destructuring-bind (lines ign expected)
-                (apply #'mapcar #'list input)
-              (declare (ignore ign))
-              (every #'= (mapcar #'d2-needed-ribbon (day-2-parse lines))
-                     expected))))
+  :p2-test ((every #'= (mapcar #'d2-needed-ribbon (day-2-parse %test-input%))
+                   %p2-expect%)))
 
