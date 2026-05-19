@@ -16,9 +16,10 @@
                       1048970)
   :parse ()
   :p1 ((loop :for ans :from 1
-             :when (string= "00000"
-                            (md5vec->str (sb-md5:md5sum-string (format nil "~a~a" input ans)))
-                            :end2 5)
+             :for md5 := (sb-md5:md5sum-string (format nil "~a~a" input ans))
+             :when (and (zerop (aref md5 0))
+                        (zerop (aref md5 1))
+                        (< (aref md5 2) #x10))
                :return ans))
   :p2 ((loop :for ans :from 1
              :when (equalp #(0 0 0)
