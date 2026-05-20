@@ -22,7 +22,7 @@ day-number is a number
 any of the keyword parameters :p1 :p2 and :parse will define functions with the name \"DAY-<day-number>-<keyword>\"
 :test-input defines a local variable %test-input% for testing the examples, should be a list of separate test inputs
 :p<num>-test-expected defines local variables %p1-expect% or %p2-expect% for testing examples, also should be lists
-a global variable with name \"*DAY<day-number>INPUT*\" is defined containing the string \"<*year*>d<day-number>input.txt\""
+a local variable with name \"%infile-name%\" is defined containing the string \"<*year*>d<day-number>input.txt\""
   (let ((package (find-package (string-upcase (format nil "aoc-~d" *year*))))
         (names-and-bodies (remove-if #'null (list (cons "DAY-~d-P1" p1-body)
                                                   (cons "DAY-~d-P2" p2-body)
@@ -32,15 +32,21 @@ a global variable with name \"*DAY<day-number>INPUT*\" is defined containing the
                                      :key #'cdr)))
     `(let ((%p1-expect% ,p1-test-expected)
            (%p2-expect% ,p2-test-expected)
-           (%test-input% ,test-input))
+           (%test-input% ,test-input)
+           (%infile-name% ,(format nil "~dd~dinput.txt" *year* day-number)))
        (declare (ignorable %p1-expect% %p2-expect% %test-input%))
        (progn
-         (defparameter ,(intern (format nil "*DAY~dINPUT*" day-number)) ,(format nil "~dd~dinput.txt" *year* day-number))
-         ,@(mapcar (lambda (name/body)
-                     `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
-                        (declare (ignorable input))
-                        ,@(cdr name/body)))
-                   names-and-bodies)))))
+         (flet ((%input-as-string% ()
+                  (uiop:read-file-string %infile-name))
+                (%input-as-lines% ()
+                  (uiop:read-file-lines %infile-name%)))
+          ,@(mapcar (lambda (name/body)
+                      `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
+                         (declare (ignorable input))
+                         ,@(cdr name/body)))
+                    names-and-bodies)
+           (defun ,(intern (format nil "DAY-%d-RUN" package)) (parts-list &optional (input ))
+             ))))))
 
 (defun vformat (format-string &rest args)
   "print to standard output only if *verbose* is true"
