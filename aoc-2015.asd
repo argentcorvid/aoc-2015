@@ -9,10 +9,11 @@
   :license  "BSD 2-Clause"
   :version "0.0.1"
   :serial t
-  :depends-on (#:alexandria #:str)
+  :depends-on ("alexandria" "str")
   :components ((:file "package")
                (:file "aoc-2015")
                (:file "2015d1")
                (:file "2015d2")
                (:file "2015d3")
-               (:file "2015d4")))
+               (:file "2015d4")
+               (:file "2015d5")))
