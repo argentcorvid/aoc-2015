@@ -25,4 +25,5 @@
              :when (equalp #(0 0 0)
                           (subseq (sb-md5:md5sum-string (format nil "~a~a" input ans))
                                   0 3))
+             ;; :when (search #(0 0 0) (sb-md5:md5sum-string (format nil "~a~a" input ans)) :test #'equalp :end2 3
                :return ans)))
