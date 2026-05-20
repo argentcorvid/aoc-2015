@@ -16,7 +16,8 @@
                     ((:p2-test (&body p2test-body)))
                     test-input
                     p1-test-expected
-                    p2-test-expected)
+                    p2-test-expected
+                    input-as-string)
   "Define a set of functions and test data in package \"AOC-<*year*>\" for a given day of Advent of Code.
 day-number is a number
 any of the keyword parameters :p1 :p2 and :parse will define functions with the name \"DAY-<day-number>-<keyword>\"
@@ -40,13 +41,19 @@ a local variable with name \"%infile-name%\" is defined containing the string \"
                   (uiop:read-file-string %infile-name))
                 (%input-as-lines% ()
                   (uiop:read-file-lines %infile-name%)))
-          ,@(mapcar (lambda (name/body)
-                      `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
-                         (declare (ignorable input))
-                         ,@(cdr name/body)))
-                    names-and-bodies)
-           (defun ,(intern (format nil "DAY-%d-RUN" package)) (parts-list &optional (input ))
-             ))))))
+           ,@(mapcar (lambda (name/body)
+                       `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
+                          (declare (ignorable input))
+                          ,@(cdr name/body)))
+                     names-and-bodies)
+           ,(unless parse-body
+              `(defun ,(intern (format nil "DAY-~d-PARSE" day-number) package) (in)
+                 in))
+           (defun ,(intern (format nil "RUN-DAY-%d" day-number) package) (parts-list &optional (data ,(if input-as-string '(%input-as-string%) '(%input-as-lines%))))
+             (dolist (part (a:ensure-list parts-list))
+               (ccase part
+                 (1 (format t "~&Part 1: ~a" (p1 data)))
+                 (2 (format t "~&Part 2: ~a" (p2 data)))))))))))
 
 (defun vformat (format-string &rest args)
   "print to standard output only if *verbose* is true"
@@ -54,10 +61,7 @@ a local variable with name \"%infile-name%\" is defined containing the string \"
     (apply #'format t format-string args)))
 
 (defun run (parts-list data)
-  (dolist (part (a:ensure-list parts-list))
-    (ccase part
-      (1 (format t "~&Part 1: ~a" (p1 data)))
-      (2 (format t "~&Part 2: ~a" (p2 data))))))
+  )
 
 (defun main (&rest parts)
   (let* ((infile-name (format nil *input-name-template* *day-number*))
