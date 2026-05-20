@@ -26,6 +26,17 @@
                            :start1 pat-start :end1 pat-end
                            :start2 pat-end)))
 
+(defun hp-3 (str)
+  (labels ((rec (pat-start)
+             (let ((pat-end (+ 2 pat-start)))
+               (cond ((> pat-start (- (length str) 4)) nil)
+                     ((search str str
+                              :start1 pat-start :end1 pat-end
+                              :start2 pat-end)
+                      t)
+                     ((rec (1+ pat-start)))))))
+    (rec 0)))
+
 (defun has-split-pair-p (str)
   (ppcre:scan "(.).\\1" str))
 
@@ -33,6 +44,15 @@
   (declare (simple-string str))
   (loop :for pat-start fixnum :from 0 :to (- (length str) 3)
         :thereis (char= (schar str pat-start) (schar str (+ 2 pat-start)))))
+
+(defun hsp-3 (str)
+  (declare (simple-string str))
+  (labels ((rec (pat-start)
+             (cond ((> pat-start (- (length str) 3)) nil)
+                   ((char= (schar str pat-start) (schar str (+ 2 pat-start)))
+                    t)
+                   ((rec (1+ pat-start))))))
+    (rec 0)))
 
 (defday 5
   :test-input '("ugknbfddgicrmopn"
