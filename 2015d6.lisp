@@ -25,4 +25,20 @@
                                               (1 0)))
                                          (n 1)
                                          (f 0)))))))))
-  :p2 ())
+  :p2 ((let ((brightness 0)
+             (scanner (ppcre:create-scanner "(e|n|f) (\\d{1,}),(\\d{1,}) \\w+ (\\d{1,}),(\\d{1,})")))
+         (declare (fixnum brightness))
+         (dolist (inst input) 
+           (ppcre:register-groups-bind
+               (((a:compose #'intern #'string-upcase) action)
+                (#'parse-integer c1-x c1-y c2-x c2-y))
+               (scanner inst)
+             (setf brightness (a:clamp
+                               (+ brightness (* (1+ (- c2-x c1-x))
+                                                (1+ (- c2-y c1-y))
+                                                (case action
+                                                  (e 2)
+                                                  (n 1)
+                                                  (f -1))))
+                               0 most-positive-fixnum))))
+         brightness)))
