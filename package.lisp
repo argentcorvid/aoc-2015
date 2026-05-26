@@ -4,5 +4,5 @@
 
 
 (defpackage #:aoc-2015
-  (:use #:cl)
+  (:use #:cl #:trivia #:trivia.ppcre)
   (:local-nicknames (#:a #:alexandria-2)))
