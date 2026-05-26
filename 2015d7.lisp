@@ -10,33 +10,34 @@
 (defun 16bits (number)
   (ldb (byte 16 0) number))
 
-(let ((cache (make-hash-table)))
-  (defun recurse-tree (from)
-    (declare (special input))
-    (multiple-value-bind (val present)
-        (gethash from cache)
-      (if present
-          (16bits val)
-          (let ((current (gethash from input)))
-            (setf (gethash from cache)
-                  (16bits
-                   (match current
-                     ((and (type integer) num)
-                      num)
-                     ((and (type symbol) sym)
-                      (recurse-tree sym))
-                     ((list 'lognot sym)
-                      (lognot (recurse-tree sym)))
-                     ((list op arg1 arg2)
-                      (let ((a1 (etypecase arg1
-                                  (symbol (recurse-tree arg1))
-                                  (integer arg1)))
-                            (a2 (etypecase arg2
-                                  (symbol (recurse-tree arg2))
-                                  (integer arg2))))
-                        (funcall op a1 a2)))
-                     (_
-                      (format t "no match for: ~a" current))))))))))
+(defparameter d7cache (make-hash-table))
+
+(defun recurse-tree (from)
+  (declare (special input))
+  (multiple-value-bind (val present)
+      (gethash from d7cache)
+    (if present
+        (16bits val)
+        (let ((current (gethash from input)))
+          (setf (gethash from d7cache)
+                (16bits
+                 (match current
+                   ((and (type integer) num)
+                    num)
+                   ((and (type symbol) sym)
+                    (recurse-tree sym))
+                   ((list 'lognot sym)
+                    (lognot (recurse-tree sym)))
+                   ((list op arg1 arg2)
+                    (let ((a1 (etypecase arg1
+                                (symbol (recurse-tree arg1))
+                                (integer arg1)))
+                          (a2 (etypecase arg2
+                                (symbol (recurse-tree arg2))
+                                (integer arg2))))
+                      (funcall op a1 a2)))
+                   (_
+                    (format t "no match for: ~a" current)))))))))
 
 (defday 7
   :test-input ""
@@ -63,8 +64,11 @@
                         ((list in1)
                          (make-number-or-symbol in1))))))))
   :p1 ((declare (special input))
+       (clrhash d7cache)
        (recurse-tree '|a|))
   :P2 ((declare (special input))
+       (clrhash d7cache)
        (let ((a (recurse-tree '|a|)))
          (setf (gethash '|b| input) a))
+       (clrhash d7cache)
        (recurse-tree '|a|)))
