@@ -33,7 +33,7 @@
                 "\"\\x27\"")
   :parse ()
   :p1 ((let ((single-escape (ppcre:create-scanner "\\\\\\\\|\\\\\\\""))
-             (hex-escape (ppcre:create-scanner "\\\\x[0-9a-z]{2}"))
+             (hex-escape (ppcre:create-scanner "(?<!\\\\)\\\\x[0-9a-z]{2}"))
              (code-length 0)
              (string-length 0))
          (dolist (line input) ;;; change to reduce
