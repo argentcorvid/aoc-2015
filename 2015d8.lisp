@@ -15,7 +15,7 @@
          (dolist (line input) ;;; change to reduce
            (let ((singles-count  (ppcre:count-matches single-escape line))
                  (hex-count (ppcre:count-matches hex-escape line)))
-             (format t "~&~a :~%code length: ~d~%singles found: ~d~%hexes found: ~d~%string length: ~d~%~%"
+             (vformat t "~&~a :~%code length: ~d~%singles found: ~d~%hexes found: ~d~%string length: ~d~%~%"
                      line
                      (length line)
                      singles-count
