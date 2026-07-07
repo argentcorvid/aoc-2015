@@ -9,7 +9,8 @@
   :license  "BSD 2-Clause"
   :version "0.0.1"
   :serial t
-  :depends-on ("alexandria" "ppcre" "str" "sb-md5" "trivia" "trivia.ppcre")
+  :depends-on ("alexandria" "ppcre" "str" "sb-md5" "trivia" "trivia.ppcre"
+                            "serapeum")
   :components ((:file "package")
                (:file "aoc-2015")
                (:file "2015d1")
