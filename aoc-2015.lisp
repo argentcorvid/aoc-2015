@@ -37,8 +37,8 @@ a global variable with name \"*DAY<day-number>INPUT*\" is defined containing the
        (progn
          (defparameter ,(intern (format nil "*DAY~dINPUT*" day-number)) ,(format nil "~dd~dinput.txt" *year* day-number))
          ,@(mapcar (lambda (name/body)
-                     `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input)
-                        (declare (ignorable input))
+                     `(defun ,(intern (format nil (car name/body) day-number) package) (&optional input &rest more)
+                        (declare (ignorable input more))
                         ,@(cdr name/body)))
                    names-and-bodies)))))
 
