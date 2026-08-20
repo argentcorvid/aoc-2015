@@ -47,7 +47,7 @@
   (let ((new-pwd
           (loop :with carry-in := 0
                 :for c :across (reverse string-in)
-                :for (new carry-out) := (multiple-value-list (next-char c carry-in))
+                :for (new carry-out) := (multiple-value-list (next-char c))
                 :collect new :into out
                 :do (setf carry-in carry-out)
                 :until (zerop carry-in)
