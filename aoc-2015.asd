@@ -10,7 +10,7 @@
   :version "0.0.1"
   :serial t
   :depends-on ("alexandria" "cl-ppcre" "str" "sb-md5" "trivia" "trivia.ppcre"
-                            "serapeum")
+                            "serapeum" "com.inuoe.jzon")
   :components ((:file "package")
                (:file "aoc-2015")
                (:file "2015d1")
