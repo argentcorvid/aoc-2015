@@ -46,6 +46,9 @@ David would gain 41 happiness units by sitting next to Carol."
               (format t "~&Max happiness: ~a" happiness)
               (format t "~&Order: ~a" order)
               (= happiness %p1-expect%)))
-  :p2 ())
+  :p2 ((loop :for k :being :the :hash-keys :of input
+             :do (setf (s:href input k "Me") 0
+                       (gethash k (a:ensure-gethash "Me" input (s:dict))) 0))
+       (day-13-p1 input)))
 
 
