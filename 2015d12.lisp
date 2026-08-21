@@ -14,7 +14,7 @@
          (labels ((sum-objs (obj)
                     (typecase obj
                       (hash-table (let ((vals (a:hash-table-values obj)))
-                                    (if (find "red" vals)
+                                    (if (find "red" vals :test #'equal)
                                         0
                                         (reduce #'+ (mapcar #'sum-objs vals)))))
                       (vector (reduce #'+ (map 'list #'sum-objs obj)))
