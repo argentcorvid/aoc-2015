@@ -6,8 +6,9 @@
   (let ((a (copy-list seating-order))
         (b (a:rotate (copy-list seating-order) -1)))
     (list seating-order
-          (reduce #'+ (mapcar (lambda (person-a person-b)
-                                (s:href table person-a person-b))
+          (reduce #'+ (mapcan (lambda (person-a person-b)
+                                (list (s:href table person-a person-b)
+                                      (s:href table person-b person-a)))
                               a b)))))
 
 (defday 13
@@ -35,7 +36,7 @@ David would gain 41 happiness units by sitting next to Carol."
                                                    (fourth splits))))
                 :finally (return ht)))
   :p1 ((let (totals)
-         (a:map-permutations
+         (a:map-derangements
           (lambda (seating-order)
             (push (get-happiness input seating-order) totals))
           (a:hash-table-keys input))
