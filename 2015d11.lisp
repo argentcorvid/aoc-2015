@@ -44,14 +44,15 @@
     (values (num-to-char out) carry)))
 
 (defun increment-password (string-in)
-  (let ((new-pwd
-          (loop :with carry-in := 0
-                :for c :across (reverse string-in)
-                :for (new carry-out) := (multiple-value-list (next-char c))
-                :collect new :into out
-                :do (setf carry-in carry-out)
-                :until (zerop carry-in)
-                :finally (return (replace string-in (reverse out) :start1 (- (length string-in) (length out)))))))
+  (let* ((string-in (copy-seq string-in))
+         (new-pwd
+           (loop :with carry-in := 0
+                 :for c :across (reverse string-in)
+                 :for (new carry-out) := (multiple-value-list (next-char c))
+                 :collect new :into out
+                 :do (setf carry-in carry-out)
+                 :until (zerop carry-in)
+                 :finally (return (replace string-in (reverse out) :start1 (- (length string-in) (length out)))))))
     (a:if-let ((p (position-if #'iol-p new-pwd)))
       (increment-password (fill new-pwd #\z :start (1+ p)))
       new-pwd)))
@@ -59,5 +60,10 @@
 (defday 11
   :test-input ""
   :parse ()
-  :p1 ()
-  :p2 ())
+  :p1-test (())
+  :p1 ((loop :for pw := (increment-password input) :then (increment-password pw)
+             :for steps :from 1
+             :until (valid-password-p pw)
+             :finally (fresh-line)
+                      (return (princ pw))))
+  :p2 ((day-11-p1 (day-11-p1 input))))
