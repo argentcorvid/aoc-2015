@@ -2,6 +2,14 @@
 
 (in-package :aoc-2015)
 
+(defun get-happiness (table seating-order)
+  (let ((a (copy-list seating-order))
+        (b (a:rotate (copy-list seating-order) -1)))
+    (list seating-order
+          (reduce #'+ (mapcar (lambda (person-a person-b)
+                                (s:href table person-a person-b))
+                              a b)))))
+
 (defday 13
   :test-input
   "Alice would gain 54 happiness units by sitting next to Bob.
@@ -26,5 +34,17 @@ David would gain 41 happiness units by sitting next to Carol."
                                                        "-")
                                                    (fourth splits))))
                 :finally (return ht)))
-  :p1 ()
+  :p1 ((let (totals)
+         (a:map-permutations
+          (lambda (seating-order)
+            (push (get-happiness input seating-order) totals))
+          (a:hash-table-keys input))
+         (s:extrema totals #'> :key #'second)))
+  :p1-test ((destructuring-bind (order happiness)
+                (day-13-p1 (day-13-parse (s:lines %test-input%)))
+              (format t "~&Max happiness: ~a" happiness)
+              (format t "~&Order: ~a" order)
+              (= happiness %p1-expect%)))
   :p2 ())
+
+
