@@ -32,7 +32,9 @@ Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."
          (loop :for tn :from 1 :upto time
                :collect (first (day-14-p1 input tn))
                  :into leaders-by-step
-               :finally (return (s:extrema (a:hash-table-alist (s:frequencies leaders-by-step))
+               :finally (a:appendf leaders-by-step
+                                   (mapcar #'car input)) ;; they are tied for the lead at the start!
+                        (return (s:extrema (a:hash-table-alist (s:frequencies leaders-by-step))
                                            #'>
                                            :key #'cdr )))))
   :p2-test-expected 689
