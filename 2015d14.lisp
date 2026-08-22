@@ -8,7 +8,9 @@
     (multiple-value-bind (periods rem)
         (floor time (+ active rest))
       (list name (+ (* rate periods active)
-                    ())))))
+                    (if (<= rem active)
+                        (* rem rate)
+                        (* active rate)))))))
 
 (defday 14
   :test-input
