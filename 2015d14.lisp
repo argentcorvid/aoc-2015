@@ -28,4 +28,12 @@ Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."
          (s:extrema (mapcar (a:rcurry #'reindeer-distance time) input) #'> :key #'second)))
   :p1-test ((equal (princ (day-14-p1 (day-14-parse %test-input%) 1000)) %p1-expect% ))
   :p1-test-expected '("Comet" 1120)
-  :p2 ())
+  :p2 ((let ((time (or (first more) 0)))
+         (loop :for tn :from 1 :upto time
+               :collect (first (day-14-p1 input tn))
+                 :into leaders-by-step
+               :finally (return (s:extrema (a:hash-table-alist (s:frequencies leaders-by-step))
+                                           #'>
+                                           :key #'cdr )))))
+  :p2-test-expected 689
+  :p2-test ((equal (cdr (princ (day-14-p2 (day-14-parse %test-input%) 1000))) %p2-expect%)))
