@@ -39,3 +39,14 @@ Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."
                                            :key #'cdr )))))
   :p2-test-expected 689
   :p2-test ((equal (cdr (princ (day-14-p2 (day-14-parse %test-input%) 1000))) %p2-expect%)))
+
+(defun day-14-p2-with-ties (input &optional (time 1000))
+  (loop :for tn :from 1 :upto time
+        :for standings := (sort (mapcar (a:rcurry #'reindeer-distance time) input) #'> :key #'second)
+        :for best-dist := (second (first standings))
+        :nconcing (mapcar #'first (remove-if-not (lambda (deer-dist) (= best-dist deer-dist)) standings :key #'second))
+          :into leaders-by-step
+        :finally (return (a:hash-table-alist (s:frequencies leaders-by-step))
+                         ;; #'>
+                         ;; :key #'cdr
+                         )))
