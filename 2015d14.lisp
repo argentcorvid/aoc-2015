@@ -17,12 +17,12 @@
   "Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
 Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."
   :parse ((labels ((maybe-integerize (itm)
-                   (if (find-if #'digit-char-p itm)
-                       (parse-integer itm)
-                       itm))
+                     (if (find-if #'digit-char-p itm)
+                         (parse-integer itm)
+                         itm))
                    (parse-line (l)
                      (mapcar #'maybe-integerize
-                            (pick-elements (str:words l) 0 3 6 13))))
+                             (pick-elements (str:words l) 0 3 6 13))))
             (mapcar #'parse-line (str:lines input))))
   :p1 ((let ((time (or (first more) 0)))
          (s:extrema (mapcar (a:rcurry #'reindeer-distance time) input) #'> :key #'second)))
@@ -30,30 +30,14 @@ Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."
   :p1-test-expected '("Comet" 1120)
   :p2 ((let ((time (or (first more) 0)))
          (loop :for tn :from 1 :upto time
-               :collect (first (day-14-p1 input tn))
+               :for standings := (sort (mapcar (a:rcurry #'reindeer-distance tn) input) #'> :key #'second)
+               :for best-dist := (second (first standings))
+               :for leader-with-tie := (remove-if-not (lambda (deer-dist) (= best-dist deer-dist)) standings :key #'second)
+               :nconcing (mapcar #'first leader-with-tie)
                  :into leaders-by-step
-               :finally (a:appendf leaders-by-step
-                                   (mapcar #'car input)) ;; they are tied for the lead at the start! for full input gives 1 too many though :(
-                                                         ;; therefore this isn't right see below!
-                        (return (s:extrema (a:hash-table-alist (s:frequencies leaders-by-step))
-                                           #'>
-                                           :key #'cdr )))))
+               :finally (return (sort (a:hash-table-alist (s:frequencies leaders-by-step))
+                                      #'>
+                                      :key #'cdr)))))
   :p2-test-expected 689
-  :p2-test ((equal (cdr (princ (day-14-p2 (day-14-parse %test-input%) 1000))) %p2-expect%)))
+  :p2-test ((equal (cdr (first (princ (day-14-p2 (day-14-parse %test-input%) 1000)))) %p2-expect%)))
 
-(defparameter *d14test* (day-14-parse "Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
-Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds."))
-
-(defun day-14-p2-with-ties (input &optional (time 1000))
-  (loop :for tn :from 1 :upto time
-        :for standings := (sort (mapcar (a:rcurry #'reindeer-distance tn) input) #'> :key #'second)
-        :for best-dist := (second (first standings))
-        :for leader-with-tie := (remove-if-not (lambda (deer-dist) (= best-dist deer-dist)) standings :key #'second)
-        :when (< 1 (length leader-with-tie)) :do (format t "~&tie at ~d: ~a" tn leader-with-tie)
-        :do (vformat "~&~d: ~a" tn standings)
-        :nconcing (mapcar #'first leader-with-tie)
-          :into leaders-by-step
-        :finally (return (sort (a:hash-table-alist (s:frequencies leaders-by-step))
-                          #'>
-                          :key #'cdr)
-                         )))
