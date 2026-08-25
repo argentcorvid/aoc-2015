@@ -51,4 +51,13 @@ Cinnamon: capacity 2, durability 3, flavor -2, texture -1, calories 3")
   :p1-test-expected 62842880
   :p1-test ((let ((v (day-15-p1 (day-15-parse %test-input%))))
               (values v (= %p1-expect% v))) )
-  :p2 ())
+  :p2 ((loop :with ingredient-budget := 100
+             :and ingredient-names := (mapcar #'first input)
+             :and stats := (mapcar #'butlast input)
+             :and calories := (mapcar #'a:last-elt input)
+             :for amounts :in (partition ingredient-budget (length ingredient-names))
+             :when (= 500 (reduce #'+ (mapcar #'* calories amounts)))
+               :maximize (score-cookie (mapcar #'list ingredient-names amounts) stats)))
+  :p2-test-expected 57600000
+  :p2-test ((let ((v (day-15-p2 (day-15-parse %test-input%))))
+              (values v (= %p2-expect% v)))))
