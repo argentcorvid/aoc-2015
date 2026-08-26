@@ -77,8 +77,7 @@ perfumes: 1"))))
                          (third parts))))
        (s:lines input)))
 
-(defun day-16-p1-bf (input)
-  (let ((keys (s:lines "children: 3
+(let ((keys (s:lines "children: 3
 cats: 7
 samoyeds: 2
 pomeranians: 3
@@ -88,4 +87,22 @@ goldfish: 5
 trees: 3
 cars: 2
 perfumes: 1")))
-    (1+ (position-if (a:rcurry #'subsetp keys :test #'string=) input))))
+  (defun day-16-p1-bf (input)
+    (1+ (position-if (a:rcurry #'subsetp keys :test #'string=) input)))
+  (defun day-16-p2-bf (input)
+    (1+ (position-if (lambda (sue-line)               ;(a:rcurry #'subsetp keys :test #'string=)
+                       (subsetp sue-line keys
+                                :test (lambda (line-itm key-itm)
+                                        (match key-itm
+                                          ((ppcre "(cats|trees): (\\d+)"
+                                                  kind number)
+                                           (and (string= line-itm kind :end1 (1+ (position #\: line-itm)))
+                                                (< (parse-integer number)
+                                                   (parse-integer line-itm :start (position #\space line-itm) :junk-allowed t))))
+                                          ((ppcre "(pomeranians|goldfish): (\\d+)"
+                                                  kind number)
+                                           (and (string= line-itm kind :end1 (1+ (position #\: line-itm)))
+                                                (> (parse-integer number)
+                                                   (parse-integer line-itm :start (position #\space line-itm) :junk-allowed t))))
+                                          (otherwise (string= line-itm key-itm))))))
+                     input))))
