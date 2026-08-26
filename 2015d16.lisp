@@ -21,8 +21,7 @@ cars: 2
 perfumes: 1"))))
 
 (defun mutual-intersection (&rest lists)
-  (a:when-let (out (reduce #'intersection lists))
-    out))
+  (reduce #'intersection lists))
 
 (defday 16
   :parse ((let ((sue-table (s:dict)))
