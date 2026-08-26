@@ -31,9 +31,10 @@ perfumes: 1"))))
                  input
                  sue-table)
               
-              (setf (gethash v1 (a:ensure-gethash k1 sue-table (s:dict))) sue-number
-                    (gethash v2 (a:ensure-gethash k2 sue-table (s:dict))) sue-number
-                    (gethash v3 (a:ensure-gethash k3 sue-table (s:dict))) sue-number))))
+              (s:addhash v1 sue-number (a:ensure-gethash k1 sue-table (s:dict)))
+              (s:addhash v2 sue-number (a:ensure-gethash k2 sue-table (s:dict)))
+              (s:addhash v3 sue-number (a:ensure-gethash k3 sue-table (s:dict))))))
+
   :p1 ((a:map-combinations (lambda (to-lookup)
                              (destructuring-bind (k1 k2 k3) to-lookup
                                (let ((s1 (s:href input k1 (gethash k1 *day16key*)))
