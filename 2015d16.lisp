@@ -52,13 +52,15 @@ perfumes: 1"))))
                     (("cats" "trees")
                      (loop :for qty
                            :from (1+ (gethash name *day16key*))
-                           :upto (reduce #'max (a:hash-table-keys (gethash name input)))
-                           :append (gethash qty (gethash name input))))
+                           :upto (apply #'max (a:hash-table-keys (gethash name input)))
+                           :append (s:href input name qty); (gethash qty (gethash name input))
+                           ))
                     (("pomeranians" "goldfish")
                      (loop :for qty
                            :from (1- (gethash name *day16key*))
-                           :downto (reduce #'min (a:hash-table-keys (gethash name input)))
-                           :append (gethash qty (gethash name input))))
+                           :downto (apply #'min (a:hash-table-keys (gethash name input)))
+                           :append (s:href input name qty); (gethash qty (gethash name input))
+                           ))
                     (t (s:href input name (gethash name *day16key*))))))
          (a:map-combinations (lambda (to-lookup)
                                (a:when-let (out (apply #'mutual-intersection
@@ -66,3 +68,25 @@ perfumes: 1"))))
                                  (return-from day-16-p2 (first out))))
                              (a:hash-table-keys *day16key*)
                              :length 3))))
+
+(defun day-16-parse-bf (input)
+  (map 'vector (lambda (line)
+                 (let ((parts (ppcre:split ",\\s" line))
+                       (key-start (+ 2 (position #\: line))))
+                   (list (subseq (first parts) key-start)
+                         (second parts)
+                         (third parts))))
+       (s:lines input)))
+
+(defun day-16-p1-bf (input)
+  (let ((keys (s:lines "children: 3
+cats: 7
+samoyeds: 2
+pomeranians: 3
+akitas: 0
+vizslas: 0
+goldfish: 5
+trees: 3
+cars: 2
+perfumes: 1")))
+    (1+ (position-if (a:rcurry #'subsetp keys :test #'string=) input))))
