@@ -28,6 +28,9 @@ perfumes: 1"))))
     (a:when-let (out (reduce #'intersection res))
       (first out))))
 
+(defun d16-p1-lookup (name)
+  (s:href input name (gethash name *day16key*)))
+
 (defday 16
   :parse ((let ((sue-table (s:dict)))
             (ppcre:do-register-groups
@@ -43,13 +46,11 @@ perfumes: 1"))))
               (s:addhash v2 sue-number (a:ensure-gethash k2 sue-table (s:dict)))
               (s:addhash v3 sue-number (a:ensure-gethash k3 sue-table (s:dict))))))
 
-  :p1 ((labels ((d16-p1-lookup (name)
-                  (s:href input name (gethash name *day16key*))))
-         (a:map-combinations (lambda (to-lookup)
-                               (a:when-let (out (apply #'mutual-intersection (mapcar #'d16-p1-lookup to-lookup)))
-                                 (return-from day-16-p1 out)))
-                             (a:hash-table-keys *day16key*)
-                             :length 3)))
+  :p1 ((a:map-combinations (lambda (to-lookup)
+                             (a:when-let (out (apply #'mutual-intersection (mapcar #'d16-p1-lookup to-lookup)))
+                               (return-from day-16-p1 out)))
+                           (a:hash-table-keys *day16key*)
+                           :length 3))
   
   :p2 ((labels ((d16-p2-lookup (name)
                   (let* ((val (gethash name *day16key*))
