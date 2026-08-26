@@ -21,12 +21,8 @@ cars: 2
 perfumes: 1"))))
 
 (defun mutual-intersection (&rest lists)
-  (let (res)
-    (a:map-combinations (lambda (comb)
-                          (push (apply #'intersection comb) res))
-                        lists :length 2)
-    (a:when-let (out (reduce #'intersection res))
-      (first out))))
+  (a:when-let (out (reduce #'intersection lists))
+    (first out)))
 
 (defday 16
   :parse ((let ((sue-table (s:dict)))
