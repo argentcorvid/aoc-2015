@@ -22,7 +22,7 @@ perfumes: 1"))))
 
 (defun mutual-intersection (&rest lists)
   (a:when-let (out (reduce #'intersection lists))
-    (first out)))
+    out))
 
 (defday 16
   :parse ((let ((sue-table (s:dict)))
@@ -43,7 +43,7 @@ perfumes: 1"))))
                   (s:href input name (gethash name *day16key*))))
          (a:map-combinations (lambda (to-lookup)
                                (a:when-let (out (apply #'mutual-intersection (mapcar #'d16-p1-lookup to-lookup)))
-                                 (return-from day-16-p1 out)))
+                                 (return-from day-16-p1 (first out))))
                              (a:hash-table-keys *day16key*)
                              :length 3)))
   
@@ -63,6 +63,6 @@ perfumes: 1"))))
          (a:map-combinations (lambda (to-lookup)
                                (a:when-let (out (apply #'mutual-intersection
                                                        (mapcar #'d16-p2-lookup to-lookup)))
-                                 (return-from day-16-p2 out)))
+                                 (return-from day-16-p2 (first out))))
                              (a:hash-table-keys *day16key*)
                              :length 3))))
