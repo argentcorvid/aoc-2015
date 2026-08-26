@@ -20,6 +20,14 @@ trees: 3
 cars: 2
 perfumes: 1"))))
 
+(defun mutual-intersection (&rest lists)
+  (let (res)
+    (a:map-combinations (lambda (comb)
+                          (push (intersection (first comb) (second comb)) res))
+                        lists :length 2)
+    (a:when-let (out (reduce #'intersection res))
+      (first out))))
+
 (defday 16
   :parse ((let ((sue-table (s:dict)))
             (ppcre:do-register-groups
@@ -37,13 +45,10 @@ perfumes: 1"))))
 
   :p1 ((a:map-combinations (lambda (to-lookup)
                              (destructuring-bind (k1 k2 k3) to-lookup
-                               (let ((sue-list-1 (s:href input k1 (gethash k1 *day16key*)))
-                                     (sue-list-2 (s:href input k2 (gethash k2 *day16key*)))
-                                     (sue-list-3 (s:href input k3 (gethash k3 *day16key*))))
-                                 (a:when-let ((i1 (intersection sue-list-1 sue-list-2))
-                                              (i2 (intersection sue-list-3 sue-list-2))
-                                              (i3 (intersection sue-list-1 sue-list-3)))
-                                   (return-from day-16-p1 res)))))
+                               (a:when-let (out (mutual-intersection (s:href input k1 (gethash k1 *day16key*))
+                                                                   (s:href input k2 (gethash k2 *day16key*))
+                                                                   (s:href input k3 (gethash k3 *day16key*))))
+                                 (return-from day-16-p1 out))))
                            (a:hash-table-keys *day16key*)
                            :length 3))
   :p2 ())
