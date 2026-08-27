@@ -43,11 +43,22 @@
 (defun grid-count-ons (grid)
   (count *d18-on* (make-array (array-total-size grid) :displaced-to grid)))
 
-(defun grid-after-steps (grid steps)
-  (do ((grid grid (grid-next-state grid))
+(defun grid-set-corners (grid)
+  (destructuring-bind (max-rows max-cols)
+          (array-dimensions grid)
+        (setf (aref grid 0 0) *d18-on*
+              (aref grid 0 (1- max-cols)) *d18-on*
+              (aref grid (1- max-rows) 0) *d18-on*
+              (aref grid (1- max-rows) (1- max-cols)) *d18-on*))
+  grid)
+
+(defun grid-after-steps (grid steps &optional (part-2 nil))
+  (do ((grid (a:copy-array grid) (grid-next-state grid))
        (step 0 (1+ step)))
-      ((<= steps step)
-       grid)))
+      ((= steps step)
+       (if part-2 (grid-set-corners grid) grid))
+    (when part-2
+      (setf grid (grid-set-corners grid)))))
 
 (defday 18
   :test-input
@@ -66,4 +77,8 @@
               (values out 
                       (= %p1-expect% out))))
   :p1 ((grid-count-ons (grid-after-steps input (first more))))
-  :p2 ())
+  :p2 ((grid-count-ons (grid-after-steps input (first more) t)))
+  :p2-test-expected 17
+  :p2-test ((let ((out (day-18-p2 (day-18-parse %test-input%) 5)))
+              (values out 
+                      (= %p2-expect% out)))))
