@@ -9,14 +9,20 @@
   (loop :with new-molecules := (s:dict)
         :for ch :across molecule
         :and i :from 0
-        :do (loop :for r :in (or (gethash (string ch) r-map)
-                                 (gethash (s:slice molecule i (+ 2 i)) r-map))
-                  :when r
-                    :do (setf (gethash (str:concat (s:slice molecule 0 i)
-                                                   r
-                                                   (s:slice molecule (+ i (length r))))
-                                       new-molecules)
-                              t))            
+        :do (a:if-let (reps (gethash (string ch) r-map))
+              (dolist (r reps)
+                (setf (gethash (str:concat (s:slice molecule 0 i)
+                                           r
+                                           (s:slice molecule (+ i 1)))
+                               new-molecules)
+                      t))
+              (a:when-let (reps (gethash (s:slice molecule i (+ i 2)) r-map))
+                (dolist (r reps)
+                  (setf (gethash (str:concat (s:slice molecule 0 i)
+                                             r
+                                             (s:slice molecule (+ i 2)))
+                                 new-molecules)
+                        t))))            
         :finally (return new-molecules)))
 
 (defun count-molecules (molecule r-map)
