@@ -14,7 +14,7 @@
                   :when r
                     :do (setf (gethash (str:concat (s:slice molecule 0 i)
                                                    r
-                                                   (s:slice molecule (1+ i )))
+                                                   (s:slice molecule (+ i (length r))))
                                        new-molecules)
                               t))            
         :finally (return new-molecules)))
@@ -37,8 +37,10 @@ HOH
                 (apply (a:rcurry #'s:addhash r-map)
                        (str:split " => " line :regex t)))
               (values molecule r-map))))
+  
   :p1 ((multiple-value-call #'count-molecules (day-19-parse input)))
   :p1-test ((let ((r (day-19-p1 %test-input%)))
               (values r (= r %p1-expect%))))
   :p1-test-expected 4
+  
   :p2 ())
