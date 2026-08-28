@@ -32,13 +32,11 @@
             *d18-off*))))
 
 (defun grid-next-state (grid)
-  (loop :with (max-rows max-cols) (fixnum fixnum) := (array-dimensions grid)
-        :for row :from 0 :below max-rows
-        :collect (loop :for col :from 0 :below max-cols
-                     :collect (grid-point-next-state grid row col))
-          :into new-state
-        :finally (return (make-array (list max-rows max-cols)
-                                     :initial-contents new-state))))
+  (loop :with new-grid := (make-array (array-dimensions grid))
+        :for i :below (array-total-size grid)
+        :do (setf (row-major-aref new-grid i)
+                  (apply #'grid-point-next-state grid (s:array-index-row-major grid i)))
+        :finally (return new-grid)))
 
 (defun grid-count-ons (grid)
   (count *d18-on* (make-array (array-total-size grid) :displaced-to grid)))
