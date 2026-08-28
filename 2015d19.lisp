@@ -28,6 +28,29 @@
 (defun count-molecules (molecule r-map)
   (hash-table-count (next-molecule molecule r-map)))
 
+(defun prev-molecule (molecule r-map)
+  (let ((new-molecules (s:dict)))
+    (maphash
+     (lambda (k v)
+       (loop :for i := (search k molecule)
+             :while (>= i 0)
+             :do (dolist (r v)
+                   (unless (string= r "e")
+                     (handler-case
+                         (setf (gethash (str:concat (s:slice molecule 0 i)
+                                                    r
+                                                    (s:slice molecule (+ i (length k))))
+                                        new-molecules)
+                               t)
+                       (type-error nil (setf (gethash (str:concat (s:slice molecule 0 i)
+                                                                  r)
+                                                      new-molecules)
+                                             t)))))))
+     r-map)
+    (when (zerop (hash-table-count new-molecules))
+      (setf new-molecules (s:dict "e" t)))
+    new-molecules))
+
 (defday 19
   :test-input
   "H => HO
@@ -41,7 +64,7 @@ HOH
             (let ((r-map (s:dict)))
               (dolist (line (str:lines reps))
                 (apply (a:rcurry #'s:addhash r-map)
-                       (str:split " => " line :regex t)))
+                       (str:split " => " line)))
               (values molecule r-map))))
   
   :p1 ((multiple-value-call #'count-molecules (day-19-parse input)))
@@ -49,4 +72,6 @@ HOH
               (values r (= r %p1-expect%))))
   :p1-test-expected 4
   
-  :p2 ())
+  :p2 ()
+  :p2-test-expected '(3 6)              ; HOH, HOHOHO
+  )
