@@ -114,3 +114,9 @@ HOHOHO
                       outs))
               (values outs (a:set-equal outs %p2-expect% :test #'equal))))
   )
+
+(defun day-19-p2-math (molecule r-map)
+  (let ((elements (a:hash-table-keys r-map)))
+    (flet ((mapcount (tokens)
+             (apply #'+ (mapcar (a:rcurry #'str:count-substring molecule) tokens ))))
+     (- (mapcount elements) (* 2 (mapcount '("Y"))) 1))))
