@@ -32,8 +32,9 @@
   (let ((new-molecules (s:dict)))
     (maphash
      (lambda (k v)
-       (loop :for i := (search k molecule)
-             :while (>= i 0)
+       (loop :for i := (search k molecule) :then (search k molecule :start2 (1+ i))
+             :while (and (not (null i))
+                         (>= i 0))
              :do (dolist (r v)
                    (unless (string= r "e")
                      (handler-case
@@ -60,18 +61,16 @@
 (defun steps-to-generate (molecule r-map)
   (loop :with r-map := (invert-map r-map)
         :and seen := (s:dict)
-        :and steps := 1
-        :with prev-gen := (prev-molecule molecule r-map)
         :while (not (equalp prev-gen (s:dictq "e" t)))
-        :do (let ((curr-gen (s:dict))
-                  (candidate (s:shortest prev-gen))
-                  new)
-              (unless (setf new (s:href seen candidate))
-                (setf new (prev-molecule candidate r-map))
-                (setf (s:href seen candidate) new))
-              (s:merge-tables* curr-gen candidate)
-              (setf prev-gen curr-gen)
-              (incf steps))
+        :for curr-gen := (s:dict) :then (s:merge-tables curr-gen new)
+        :for steps :from 1
+        :for  prev-gen := (prev-molecule molecule r-map) :then  curr-gen
+        :for candidate := (s:shortest (a:hash-table-keys prev-gen))
+        :for new := (s:href seen candidate)
+        :unless new
+          :do (setf new (prev-molecule candidate r-map))
+              (setf (s:href seen candidate) new)
+                                        ;(s:merge-tables* curr-gen candidate)
         :finally (return steps)))
 
 (defday 19
@@ -95,6 +94,26 @@ HOH
               (values r (= r %p1-expect%))))
   :p1-test-expected 4
   
-  :p2 ()
+  :p2 ((multiple-value-call #'steps-to-generate (day-19-parse input)))
   :p2-test-expected '(3 6)              ; HOH, HOHOHO
+  :p2-test ((let (outs)
+              (dolist (in (list "e => H
+e => O
+H => HO
+H => OH
+O => HH
+
+HOH
+"
+                                "e => H
+e => O
+H => HO
+H => OH
+O => HH
+
+HOHOHO
+"))
+                (push (multiple-value-call #'steps-to-generate (day-19-parse in))
+                      outs))
+              (values outs (a:set-equal outs %p2-expect% :test #'equal))))
   )
