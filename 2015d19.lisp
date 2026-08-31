@@ -51,6 +51,29 @@
       (setf new-molecules (s:dict "e" t)))
     new-molecules))
 
+(defun invert-map (r-map-in)
+  (let ((revmap (s:dict)))
+    (s:do-hash-table (k v r-map-in revmap)
+      (dolist (i v)
+        (s:addhash i k revmap)))))
+
+(defun steps-to-generate (molecule r-map)
+  (loop :with r-map := (invert-map r-map)
+        :and seen := (s:dict)
+        :and steps := 1
+        :with prev-gen := (prev-molecule molecule r-map)
+        :while (not (equalp prev-gen (s:dictq "e" t)))
+        :do (let ((curr-gen (s:dict))
+                  (candidate (s:shortest prev-gen))
+                  new)
+              (unless (setf new (s:href seen candidate))
+                (setf new (prev-molecule candidate r-map))
+                (setf (s:href seen candidate) new))
+              (s:merge-tables* curr-gen candidate)
+              (setf prev-gen curr-gen)
+              (incf steps))
+        :finally (return steps)))
+
 (defday 19
   :test-input
   "H => HO
