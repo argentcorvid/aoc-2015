@@ -116,7 +116,10 @@ HOHOHO
   )
 
 (defun day-19-p2-math (molecule r-map)
-  (let ((elements (a:hash-table-keys r-map)))
-    (flet ((mapcount (tokens)
-             (apply #'+ (mapcar (a:rcurry #'str:count-substring molecule) tokens ))))
-     (- (mapcount elements) (* 2 (mapcount '("Y"))) 1))))
+  ;;;https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/cy4h7ji/
+  (declare (ignore r-map))
+  (- (count-if #'upper-case-p molecule)
+     (str:count-substring "Rn" molecule)
+     (str:count-substring "Ar" molecule)
+     (* 2 (count #\Y molecule))
+     1))
