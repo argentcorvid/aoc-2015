@@ -30,24 +30,21 @@
 
 (defun prev-molecule (molecule r-map)
   (let ((new-molecules (s:dict)))
-    (maphash
-     (lambda (k v)
-       (loop :for i := (search k molecule) :then (search k molecule :start2 (1+ i))
-             :while (and (not (null i))
-                         (>= i 0))
-             :do (dolist (r v)
-                   (unless (string= r "e")
-                     (handler-case
-                         (setf (gethash (str:concat (s:slice molecule 0 i)
-                                                    r
-                                                    (s:slice molecule (+ i (length k))))
-                                        new-molecules)
-                               t)
-                       (type-error nil (setf (gethash (str:concat (s:slice molecule 0 i)
-                                                                  r)
-                                                      new-molecules)
-                                             t)))))))
-     r-map)
+    (s:do-hash-table (k v r-map)
+      (loop :for i := (search k molecule) :then (search k molecule :start2 (1+ i))
+            :until (null i)
+            :do (loop :for r :in v
+                      :unless (string= r "e")
+                        :do (handler-case
+                                (setf (gethash (str:concat (subseq molecule 0 i)
+                                                           r
+                                                           (subseq molecule (+ i (length k))))
+                                               new-molecules)
+                                      t)
+                              (type-error nil (setf (gethash (str:concat (subseq molecule 0 i)
+                                                                         r)
+                                                             new-molecules)
+                                                    t))))))
     (when (zerop (hash-table-count new-molecules))
       (setf new-molecules (s:dict "e" t)))
     new-molecules))
@@ -61,16 +58,16 @@
 (defun steps-to-generate (molecule r-map)
   (loop :with r-map := (invert-map r-map)
         :and seen := (s:dict)
-        :while (not (equalp prev-gen (s:dictq "e" t)))
-        :for curr-gen := (s:dict) :then (s:merge-tables curr-gen new)
         :for steps :from 1
         :for  prev-gen := (prev-molecule molecule r-map) :then  curr-gen
+        :until (equalp prev-gen (s:dict "e" t))
+        :for curr-gen := (s:dict)
         :for candidate := (s:shortest (a:hash-table-keys prev-gen))
-        :for new := (s:href seen candidate)
-        :unless new
+        :for (new found) := (multiple-value-list (s:href seen candidate))
+        :unless found
           :do (setf new (prev-molecule candidate r-map))
               (setf (s:href seen candidate) new)
-                                        ;(s:merge-tables* curr-gen candidate)
+        :do (setf curr-gen (s:merge-tables curr-gen new))
         :finally (return steps)))
 
 (defday 19
