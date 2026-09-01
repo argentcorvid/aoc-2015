@@ -41,13 +41,11 @@
 
 (defun collect-divisors (number)
   (let (divisors)
-    (dolist (d *day20primes*)
-      (when (>= d number)
-        (return (nconc (list 1 number) divisors)))
+    (dotimes (d number divisors)
       (multiple-value-bind (q r)
-          (floor number d)
+          (floor number (1+ d))
         (when (zerop r)
-          (a:nconcf divisors (list q d)))))))
+          (a:unionf divisors (list q (1+ d))))))))
 
 (defun sum-divisors (number)
   (let ((sum 0))
