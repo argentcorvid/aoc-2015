@@ -102,6 +102,43 @@
         :when (>= sum number)
           :return (values i sum)))
 
+(defun day-20-p1-robin-ineq (presents)
+  ;;https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cyevexq/
+  ;;what a mess!
+  (declare (fixnum presents))
+  (flet ((robins (n)
+           (* n (log (log n)) (exp 0.57721566490153286060651209008240243104215933593992))))
+    (let ((lo 5040)
+          (hi presents))
+      (declare (fixnum lo hi))
+      (loop :for mid fixnum := (floor (+ lo hi) 2)
+            :for mid-r := (robins mid)
+            :while (< lo hi)
+            :when (< mid-r presents)
+              :do (setf lo (1+ mid))
+            :else :if (> mid-r presents)
+                    :do (setf hi mid))
+      (loop :with lo fixnum := hi
+            :with hi fixnum := (floor (* lo 1.1))
+            :for houses := (loop :with a := (make-array (- hi lo) :element-type 'fixnum)
+                                 :for n fixnum :from lo :below hi
+                                 :for i :from 0
+                                 :do (setf (aref a i) n)
+                                 :finally (return a))
+            :for n_houses := (length houses)
+            :for visits := (make-array n_houses :element-type 'fixnum)
+            :for end := n_houses
+            :do (loop :for i :from (aref houses (1- n_houses)) :downto 1
+                      :for start := (- (* i (ceiling (aref houses 0) i)) (aref houses 0))
+                      :do (loop :for j :from start :below end :by i
+                                :do (incf (aref visits j) i))
+                          (loop :for i :from 0
+                                :for s :across visits
+                                :when (> s presents)
+                                  :do (return-from day-20-p1-robin-ineq
+                                        (values (1+ (aref houses 0))
+                                                s))))))))
+
 (defday 20
   :test-input ""
   :parse ()
