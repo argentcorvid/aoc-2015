@@ -147,7 +147,7 @@
          :finally (return (let ((house-number (position-if (lambda (p) (<= input p)) a)))
                             (values house-number (aref a house-number))))))
   :p2
-  ((loop :with a := (make-array input :element-type 'fixnum)
+  ((loop :with a := (make-array (floor input 22) :element-type 'fixnum)
          :for elf-number fixnum :from 1 :below (length a)
          :do (loop :for house-number fixnum :from elf-number :below (length a) :by elf-number
                    :for visited :below 50
