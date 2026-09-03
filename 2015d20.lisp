@@ -128,7 +128,7 @@
                                       s)))))))
 
 (defday 20
-  :test-input 3400000
+  :test-input 34000000
   :parse ()
   :p1
 ;; #1 reddit solution: https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cy59zd9/
@@ -140,14 +140,16 @@
 ;;   0.00% CPU
 ;;   55,556,829 processor cycles
 ;;   8,000,016 bytes consed
-  ((loop :with a := (make-array (floor (the fixnum input) 2) :element-type 'fixnum)
+  ((loop :with input := (/ %test-input% 10)
+         :with a := (make-array (floor (the fixnum input) 2) :element-type 'fixnum)
          :for i fixnum :from 1 :below (array-total-size a)
          :do (loop :for j fixnum :from i :below (array-total-size a) :by i
                    :do (incf (aref a j) i))
          :finally (return (let ((house-number (position-if (lambda (p) (<= input p)) a)))
                             (values house-number (aref a house-number))))))
   :p2
-  ((loop :with a := (make-array (floor input 22) :element-type 'fixnum)
+  ((loop :with input := %test-input%
+         :with a := (make-array (floor input 22) :element-type 'fixnum)
          :for elf-number fixnum :from 1 :below (length a)
          :do (loop :for house-number fixnum :from elf-number :below (length a) :by elf-number
                    :for visited :below 50
