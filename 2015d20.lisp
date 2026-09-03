@@ -25,34 +25,7 @@
 ;; between those 2 numbers?
 ;; no - 1000080 (lowest house number between 1e6 and 3.4e6 giving presents = 3_452_160) is too big
 
-;; #1 reddit solution: https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cy59zd9/
-;; takes problem literally, allocates 1D array of (target) elements and iterates through them and adding all
-;; gives 786240,
-;; Evaluation took:
-;;   0.028 seconds of real time
-;;   0.000000 seconds of total run time (0.000000 user, 0.000000 system)
-;;   0.00% CPU
-;;   55,556,829 processor cycles
-;;   8,000,016 bytes consed
-
-;; second algorithm in same comment just does straight iteration, says it is really slow
-;; but seems to be just as fast here, but gives different answer - 3248 - was coding it wrong
-;; straight iteration gives 3_413_760 @ 786240
-;; Evaluation took:
-;;   618.652 seconds of real time
-;;   263.171875 seconds of total run time (262.750000 user, 0.421875 system)
-;;   42.54% CPU
-;;   1,306,589,317,683 processor cycles
-;;   0 bytes consed
-
-;; iteration using sqrt:
-;; Evaluation took:
-;;   0.955 seconds of real time
-;;   0.453125 seconds of total run time (0.437500 user, 0.015625 system)
-;;   47.43% CPU
-;;   2,012,795,237 processor cycles
-;;   0 bytes consed
-
+(defun collect-divisors (number)
 ;; collecting divisors (start at 500_000 and end at 1_000_000)
 ;; Evaluation took:
 ;;   472.298 seconds of real time
@@ -62,10 +35,6 @@
 ;;   34.42% CPU
 ;;   997,488,952,649 processor cycles
 ;;   123,840,288 bytes consed
-
-
-
-(defun collect-divisors (number)
   (let (divisors)
     (dotimes (d (floor number 2) divisors)
       (multiple-value-bind (q r)
@@ -80,6 +49,15 @@
 
 
 (defun sum-divisors-1 (number &optional (end (floor number 2)))
+;; second algorithm in same comment just does straight iteration, says it is really slow
+;; but seems to be just as fast here, but gives different answer - 3248 - was coding it wrong
+;; straight iteration gives 3_413_760 @ 786240
+;; Evaluation took:
+;;   618.652 seconds of real time
+;;   263.171875 seconds of total run time (262.750000 user, 0.421875 system)
+;;   42.54% CPU
+;;   1,306,589,317,683 processor cycles
+;;   0 bytes consed
   (declare (fixnum number end))
   (loop :for sum fixnum := 0
         :for i fixnum :from 1 :to end
@@ -90,6 +68,13 @@
           :return (values i sum)))
 
 (defun sum-divisors-2 (number &optional (end (floor (the fixnum number) 2)))
+;; iteration using sqrt:
+;; Evaluation took:
+;;   0.955 seconds of real time
+;;   0.453125 seconds of total run time (0.437500 user, 0.015625 system)
+;;   47.43% CPU
+;;   2,012,795,237 processor cycles
+;;   0 bytes consed
   (declare (fixnum number end))
   (loop :for sum fixnum := 0
         :for i fixnum :from 1 :to end
@@ -103,8 +88,14 @@
           :return (values i sum)))
 
 (defun day-20-p1-robin-ineq (presents)
-  ;;https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cyevexq/
-  ;;what a mess!
+;;https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cyevexq/
+;;what a mess!
+;; Evaluation took:
+;;   0.008 seconds of real time
+;;   0.000000 seconds of total run time (0.000000 user, 0.000000 system)
+;;   0.00% CPU
+;;   10,929,725 processor cycles
+;;   2,352,464 bytes consed  
   (declare (fixnum presents))
   (flet ((robins (n)
            (* n (log (log n)) (exp 0.57721566490153286060651209008240243104215933593992))))
@@ -120,32 +111,39 @@
                     :do (setf hi mid))
       (loop :with lo fixnum := hi
             :with hi fixnum := (floor (* lo 1.1))
-            :for houses := (loop :with a := (make-array (- hi lo) :element-type 'fixnum)
-                                 :for n fixnum :from lo :below hi
-                                 :for i :from 0
-                                 :do (setf (aref a i) n)
-                                 :finally (return a))
+            :for houses := (loop :for i fixnum :from lo :below hi :collect i :into a
+                                 :finally (return (coerce a '(vector fixnum))))
             :for n_houses := (length houses)
             :for visits := (make-array n_houses :element-type 'fixnum)
             :for end := n_houses
-            :do (loop :for i :from (aref houses (1- n_houses)) :downto 1
+            :do (loop :for i fixnum :downfrom (aref houses (1- n_houses)) :above 1
                       :for start := (- (* i (ceiling (aref houses 0) i)) (aref houses 0))
-                      :do (loop :for j :from start :below end :by i
-                                :do (incf (aref visits j) i))
-                          (loop :for i :from 0
-                                :for s :across visits
-                                :when (> s presents)
-                                  :do (return-from day-20-p1-robin-ineq
-                                        (values (1+ (aref houses 0))
-                                                s))))))))
+                      :do (loop :for j fixnum :from start :below end :by i
+                                :do (incf (aref visits j) i)))
+                (loop :for i fixnum :from 0
+                      :for s fixnum :across visits
+                      :when (> s presents)
+                        :do (return-from day-20-p1-robin-ineq
+                              (values (+ i (aref houses 0))
+                                      s)))))))
 
 (defday 20
-  :test-input ""
+  :test-input 3400000
   :parse ()
-  :p1 ((loop :with a := (make-array (floor (the fixnum input) 2) :element-type 'fixnum)
-             :for i fixnum :from 1 :below (array-total-size a)
-             :do (loop :for j fixnum :from i :below (array-total-size a) :by i
-                       :do (incf (aref a j) i))
-             :finally (return (let ((house-number (position-if (lambda (p) (<= input p)) a)))
-                                (values house-number (aref a house-number))))))
+  :p1
+;; #1 reddit solution: https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cy59zd9/
+;; takes problem literally, allocates 1D array of (target) elements and iterates through them and adding all
+;; gives 786240,
+;; Evaluation took:
+;;   0.028 seconds of real time
+;;   0.000000 seconds of total run time (0.000000 user, 0.000000 system)
+;;   0.00% CPU
+;;   55,556,829 processor cycles
+;;   8,000,016 bytes consed
+  ((loop :with a := (make-array (floor (the fixnum input) 2) :element-type 'fixnum)
+         :for i fixnum :from 1 :below (array-total-size a)
+         :do (loop :for j fixnum :from i :below (array-total-size a) :by i
+                   :do (incf (aref a j) i))
+         :finally (return (let ((house-number (position-if (lambda (p) (<= input p)) a)))
+                            (values house-number (aref a house-number))))))
   :p2 ())
