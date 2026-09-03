@@ -146,4 +146,11 @@
                    :do (incf (aref a j) i))
          :finally (return (let ((house-number (position-if (lambda (p) (<= input p)) a)))
                             (values house-number (aref a house-number))))))
-  :p2 ())
+  :p2
+  ((loop :with a := (make-array input :element-type 'fixnum)
+         :for elf-number fixnum :from 1 :below (length a)
+         :do (loop :for house-number fixnum :from elf-number :below (length a) :by elf-number
+                   :for visited :below 50
+                   :do (incf (aref a house-number) (* elf-number 11)))
+         :finally (return (let ((found (position-if (lambda (p) (<= input p)) a)))
+                            (values found (aref a found)))))))
