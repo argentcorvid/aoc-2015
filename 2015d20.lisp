@@ -88,14 +88,14 @@
           :return (values i sum)))
 
 (defun day-20-p1-robin-ineq (presents)
-;;https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cyevexq/
-;;what a mess!
-;; Evaluation took:
-;;   0.008 seconds of real time
-;;   0.000000 seconds of total run time (0.000000 user, 0.000000 system)
-;;   0.00% CPU
-;;   10,929,725 processor cycles
-;;   2,352,464 bytes consed  
+  ;;https://www.reddit.com/r/adventofcode/comments/3xjpp2/day_20_solutions/cyevexq/
+  ;;what a mess!
+  ;; Evaluation took:
+  ;;   0.008 seconds of real time
+  ;;   0.000000 seconds of total run time (0.000000 user, 0.000000 system)
+  ;;   0.00% CPU
+  ;;   10,929,725 processor cycles
+  ;;   2,352,464 bytes consed  
   (declare (fixnum presents))
   (flet ((robins (n)
            (* n (log (log n)) (exp 0.57721566490153286060651209008240243104215933593992))))
@@ -109,23 +109,21 @@
               :do (setf lo (1+ mid))
             :else :if (> mid-r presents)
                     :do (setf hi mid))
-      (loop :with lo fixnum := hi
-            :with hi fixnum := (floor (* lo 1.1))
-            :for houses := (loop :for i fixnum :from lo :below hi :collect i :into a
-                                 :finally (return (coerce a '(vector fixnum))))
-            :for n_houses := (length houses)
-            :for visits := (make-array n_houses :element-type 'fixnum)
-            :for end := n_houses
-            :do (loop :for i fixnum :downfrom (aref houses (1- n_houses)) :above 1
-                      :for start := (- (* i (ceiling (aref houses 0) i)) (aref houses 0))
-                      :do (loop :for j fixnum :from start :below end :by i
-                                :do (incf (aref visits j) i)))
-                (loop :for i fixnum :from 0
-                      :for s fixnum :across visits
-                      :when (> s presents)
-                        :do (return-from day-20-p1-robin-ineq
-                              (values (+ i (aref houses 0))
-                                      s)))))))
+      (setf lo hi)
+      (setf hi (floor (* lo 1.1)))
+      (format t "~&lo: ~d~&hi: ~d" lo hi)
+      (loop :with n_houses := (- hi lo)
+            :with visits := (make-array n_houses :element-type 'fixnum)
+            :for i fixnum :downfrom (1- hi) :above 1
+            :for start := (- (* i (ceiling lo i)) lo)
+            :do (loop :for j fixnum :from start :below n_houses :by i
+                      :do (incf (aref visits j) i))
+            :finally (a:when-let ((house-number (position-if
+                                                 (lambda (p)
+                                                   (<= presents p))
+                                                 visits)))
+                       (return-from day-20-p1-robin-ineq
+                         (values (+ lo house-number) (aref visits house-number))))))))
 
 (defday 20
   :test-input 34000000
