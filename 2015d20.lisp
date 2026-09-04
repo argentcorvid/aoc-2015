@@ -97,8 +97,39 @@
   ;;   10,929,725 processor cycles
   ;;   2,352,464 bytes consed  
   (declare (fixnum presents))
+
   (flet ((robins (n)
            (* n (log (log n)) (exp 0.57721566490153286060651209008240243104215933593992))))
+    (let ((lo 5040)
+          (hi presents))
+      (declare (fixnum lo hi))
+      (loop :for mid fixnum := (floor (+ lo hi) 2) ; pick a point in the middle
+            :for mid-r := (robins mid) ; upper bound of sum of divisors of midpoint from lo to hi
+            :while (< lo hi) ; until low = hi ->
+            :when (< mid-r presents) ; if upper bound of sum of divisors of the middle is < # of presents
+              :do (setf lo (1+ mid)) ; adjust lo to midpoint and try again
+            :else :if (> mid-r presents) ;if the robin number is larger, the old midpoint is too big
+                    :do (setf hi mid)) ;adjust hi to midpoint
+      (setf lo hi)
+      (setf hi (floor (* lo 1.1)))
+      (format t "~&lo: ~d~&hi: ~d" lo hi)
+      (loop :with n_houses := (- hi lo)
+            :with visits := (make-array n_houses :element-type 'fixnum)
+            :for i fixnum :downfrom (1- hi) :above 1
+            :for start := (- (* i (ceiling lo i)) lo)
+            :do (loop :for j fixnum :from start :below n_houses :by i
+                      :do (incf (aref visits j) i))
+            :finally (a:when-let ((house-number (position-if
+                                                 (lambda (p)
+                                                   (<= presents p))
+                                                 visits)))
+                       (return-from day-20-p1-robin-ineq
+                         (values (+ lo house-number) (aref visits house-number))))))))
+
+(defun day-20-p2-robin-ineq (presents) 
+  (declare (fixnum presents))
+  (flet ((robins (n)
+           (* n (log (log n)) (exp 0.57721566490153286060651209008240243104215933593992d0))))
     (let ((lo 5040)
           (hi presents))
       (declare (fixnum lo hi))
@@ -114,15 +145,15 @@
       (format t "~&lo: ~d~&hi: ~d" lo hi)
       (loop :with n_houses := (- hi lo)
             :with visits := (make-array n_houses :element-type 'fixnum)
-            :for i fixnum :downfrom (1- hi) :above 1
-            :for start := (- (* i (ceiling lo i)) lo)
-            :do (loop :for j fixnum :from start :below n_houses :by i
-                      :do (incf (aref visits j) i))
+            :for i fixnum :from 1 :below hi
+            :do (loop :for j fixnum :from i :below n_houses :by i
+                      :for visited :below 50
+                      :do (incf (aref visits j) (* 11 i)))
             :finally (a:when-let ((house-number (position-if
                                                  (lambda (p)
                                                    (<= presents p))
                                                  visits)))
-                       (return-from day-20-p1-robin-ineq
+                       (return-from day-20-p2-robin-ineq
                          (values (+ lo house-number) (aref visits house-number))))))))
 
 (defday 20
