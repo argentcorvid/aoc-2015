@@ -1,0 +1,79 @@
+;;;2015 day 21
+
+(in-package :aoc-2015)
+
+(defparameter *d21shopfile* #p"2015d21shop.txt")
+
+(defparameter *d21shop*
+  (destructuring-bind (weps arm rings)
+      (mapcar #'str:lines
+              (str:paragraphs
+               (uiop:read-file-string *d21shopfile*)))
+    (list (mapcar #'eqp-split (rest weps))
+          (mapcar #'eqp-split  (rest arm))
+          (mapcar (lambda (line)
+                    (let ((p (+ 2 (position #\+ line))))
+                      (nconc (list (subseq line 0 p))
+                             (mapcar #'parse-integer (str:words (subseq line p))))))
+                  (rest rings)))))
+
+(defun eqp-split (line)
+  (let* ((p (position #\space line))
+         (name (subseq line 0 p))
+         (rem  (subseq line p)))
+    (nconc (list name)
+           (mapcar #'parse-integer (str:words rem)))))
+
+(defun d21-read-enemy ()
+  (destructuring-bind ((w1 hp)
+                       (w2 atk)
+                       (w3 arm))
+      (mapcar (a:curry #'str:split ": ")
+              (uiop:read-file-lines *day21input*))
+    (declare (ignore w1 w2 w3))
+    (list hp atk arm)))
+
+(defun d21-turn (attacker defender) ;;dont need this (for part 1 anyway)
+  (decf (entity-hp defend)
+        (max 1
+             (- (entity-atk attack)
+                (entity-arm defend)))))
+
+(defun d21-loadouts (&optional (shop *d21shop*))
+  (let ((weps (first *d21shop*))
+        (arm  (cons nil (second *d21shop*)))
+        (rings (remove-if-not (a:rcurry #'s:length<= 2)
+                              (s:powerset (third *d21shop*))))
+        out)
+    (dolist (w weps)
+      (dolist (a arm)
+        (dolist (r rings)
+          (destructuring-bind (w-name
+                               w-cost
+                               w-atk
+                               w-arm)
+              w
+            (destructuring-bind (&optional (a-name "No Armor")
+                                   (a-cost 0)
+                                   (a-atk 0)
+                                   (a-arm 0))
+                a
+              (destructuring-bind (&optional ((&optional (r1-name "No Ring")
+                                                 (r1-cost 0)
+                                                 (r1-atk 0)
+                                                 (r1-arm 0)) nil)
+                                   ((&optional (r2-name "No Ring")
+                                       (r2-cost 0)
+                                       (r2-atk 0)
+                                       (r2-arm 0)) nil))
+                  r
+                ))))))))
+
+(defday 21
+  :test-input *d21shop*
+  :parse (())
+  :p1 ((let ((player (list 100 0 0))
+             (enemy (d21-read-enemy))
+             (loadouts (d21-loadouts)))
+         ))
+  :p2 ())
