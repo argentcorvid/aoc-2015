@@ -89,4 +89,11 @@
                :when (>= (ceiling (first player) (max 1 (- (second enemy) (+ (third player) arm))))
                          (ceiling (first enemy)  (max 1 (- (+ (second player) atk) (third enemy)))))
                  :return (values cost loadout))))
-  :p2 ())
+  :p2 ((let ((player (list 100 0 0))
+             (enemy (d21-read-enemy))
+             (loadouts (d21-loadouts)))
+         (loop :for loadout :in (reverse loadouts)
+               :for (names cost atk arm) (list fixnum fixnum fixnum) := loadout
+               :when (<= (ceiling (first player) (max 1 (- (second enemy) (+ (third player) arm))))
+                         (ceiling (first enemy)  (max 1 (- (+ (second player) atk) (third enemy)))))
+                 :return (values cost loadout)))))
