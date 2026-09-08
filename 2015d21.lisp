@@ -33,7 +33,7 @@
       (mapcar (a:curry #'str:split ": ")
               (uiop:read-file-lines *day21input*))
     (declare (ignore w1 w2 w3))
-    (list hp atk arm)))
+    (mapcar #'parse-integer (list hp atk arm))))
 
 ;; (defun d21-turn (attacker defender) ;;dont need this (for part 1 anyway)
 ;;   (decf (entity-hp defend)
@@ -84,5 +84,9 @@
   :p1 ((let ((player (list 100 0 0))
              (enemy (d21-read-enemy))
              (loadouts (d21-loadouts)))
-         ))
+         (loop :for loadout :in loadouts
+               :for (names cost atk arm) (list fixnum fixnum fixnum) := loadout
+               :when (>= (ceiling (first player) (max 1 (- (second enemy) (+ (third player) arm))))
+                         (ceiling (first enemy)  (max 1 (- (+ (second player) atk) (third enemy)))))
+                 :return (values cost loadout))))
   :p2 ())
