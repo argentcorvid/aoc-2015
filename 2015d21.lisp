@@ -4,6 +4,15 @@
 
 (defparameter *d21shopfile* #p"2015d21shop.txt")
 
+(defparameter *day21input* #p"2015d21input.txt")
+
+(defun eqp-split (line)
+  (let* ((p (position #\space line))
+         (name (subseq line 0 p))
+         (rem  (subseq line p)))
+    (nconc (list name)
+           (mapcar #'parse-integer (str:words rem)))))
+
 (defparameter *d21shop*
   (destructuring-bind (weps arm rings)
       (mapcar #'str:lines
@@ -17,13 +26,6 @@
                              (mapcar #'parse-integer (str:words (subseq line p))))))
                   (rest rings)))))
 
-(defun eqp-split (line)
-  (let* ((p (position #\space line))
-         (name (subseq line 0 p))
-         (rem  (subseq line p)))
-    (nconc (list name)
-           (mapcar #'parse-integer (str:words rem)))))
-
 (defun d21-read-enemy ()
   (destructuring-bind ((w1 hp)
                        (w2 atk)
@@ -33,17 +35,17 @@
     (declare (ignore w1 w2 w3))
     (list hp atk arm)))
 
-(defun d21-turn (attacker defender) ;;dont need this (for part 1 anyway)
-  (decf (entity-hp defend)
-        (max 1
-             (- (entity-atk attack)
-                (entity-arm defend)))))
+;; (defun d21-turn (attacker defender) ;;dont need this (for part 1 anyway)
+;;   (decf (entity-hp defend)
+;;         (max 1
+;;              (- (entity-atk attacker)
+;;                 (entity-arm defender)))))
 
 (defun d21-loadouts (&optional (shop *d21shop*))
-  (let ((weps (first *d21shop*))
-        (arm  (cons nil (second *d21shop*)))
+  (let ((weps (first shop))
+        (arm  (cons nil (second shop)))
         (rings (remove-if-not (a:rcurry #'s:length<= 2)
-                              (s:powerset (third *d21shop*))))
+                              (s:powerset (third shop))))
         out)
     (dolist (w weps)
       (dolist (a arm)
@@ -53,21 +55,28 @@
                                w-atk
                                w-arm)
               w
-            (destructuring-bind (&optional (a-name "No Armor")
+            (destructuring-bind (&optional
+                                   (a-name "No Armor")
                                    (a-cost 0)
                                    (a-atk 0)
                                    (a-arm 0))
                 a
-              (destructuring-bind (&optional ((&optional (r1-name "No Ring")
-                                                 (r1-cost 0)
-                                                 (r1-atk 0)
-                                                 (r1-arm 0)) nil)
-                                   ((&optional (r2-name "No Ring")
-                                       (r2-cost 0)
-                                       (r2-atk 0)
-                                       (r2-arm 0)) nil))
+              (destructuring-bind (&optional
+                                     ((&optional (r1-name "No Ring")
+                                         (r1-cost 0)
+                                         (r1-atk 0)
+                                         (r1-arm 0)) nil)
+                                     ((&optional (r2-name "No Ring")
+                                         (r2-cost 0)
+                                         (r2-atk 0)
+                                         (r2-arm 0)) nil))
                   r
-                ))))))))
+                (push (list (list w-name a-name r1-name r2-name)
+                            (+ w-cost a-cost r1-cost r2-cost)
+                            (+ w-atk  a-atk  r1-atk  r2-atk)
+                            (+ w-arm  a-arm  r1-arm  r2-arm))
+                      out)))))))
+    (sort out #'< :key #'second)))
 
 (defday 21
   :test-input *d21shop*
