@@ -97,3 +97,42 @@
                :when (< (ceiling (first player) (max 1 (- (second enemy) (+ (third player) arm))))
                          (ceiling (first enemy)  (max 1 (- (+ (second player) atk) (third enemy)))))
                  :return (values cost loadout)))))
+
+(defun d21-p1-inline (&optional (shop *d21shop*))
+  (let ((weps (first shop))
+        (arm  (cons nil (second shop)))
+        (rings (remove-if-not (a:rcurry #'s:length<= 2)
+                              (s:powerset (third shop))))
+        (out most-positive-fixnum))
+    (dolist (w weps)
+      (dolist (a arm)
+        (dolist (r rings)
+          (destructuring-bind (w-name
+                               w-cost
+                               w-atk
+                               w-arm)
+              w
+            (destructuring-bind (&optional
+                                   (a-name "No Armor")
+                                   (a-cost 0)
+                                   (a-atk 0)
+                                   (a-arm 0))
+                a
+              (destructuring-bind (&optional
+                                     ((&optional (r1-name "No Ring")
+                                         (r1-cost 0)
+                                         (r1-atk 0)
+                                         (r1-arm 0)) nil)
+                                     ((&optional (r2-name "No Ring")
+                                         (r2-cost 0)
+                                         (r2-atk 0)
+                                         (r2-arm 0)) nil))
+                  r
+                (let ((eqp (list (list w-name a-name r1-name r2-name)
+                                 (+ w-cost a-cost r1-cost r2-cost)
+                                 (+ w-atk  a-atk  r1-atk  r2-atk)
+                                 (+ w-arm  a-arm  r1-arm  r2-arm))))
+                  (when (>= (ceiling 100 (max 1 (- 8 (fourth eqp))))
+                            (ceiling 104  (max 1 (- (third eqp) 1))))
+                    (a:minf out (second eqp))))))))))
+    out))
