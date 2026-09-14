@@ -38,8 +38,8 @@ Damage: 9")
   (getf spell :name))
 
 (defun d22-transition-state (state)
-  (let-match (((d22-game-state :player (entity :hp player-hp :mp player-mp)
-                               :enemy (entity :hp enemy-hp :atk enemy-atk)
+  (let-match (((d22-game-state :player (d22-entity :hp player-hp :mp player-mp)
+                               :enemy (d22-entity :hp enemy-hp :atk enemy-atk)
                                total-cost
                                best-cost
                                path
@@ -49,10 +49,10 @@ Damage: 9")
     (do-effects)
     ;;player turn
     (let (states-out)
-      (dolist (spell *d22spells*)
+      (dolist (spell edges) ; *d22spells*
         (let ((spell-cost (getf spell :cost)))
           (unless (or (>= player-mp spell-cost)
-                      (find spell effects :test #'equalp :key #'second))
+                      (find spell effects :key #'second))
 
             (when (plusp new-hp)
               (push new-state states-out))))))
@@ -62,19 +62,19 @@ Damage: 9")
 
 (defun a-star (start-state &key edges-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
-        (todo (s:dict 'equalp start-state t))
         (done (s:dict 'equalp)))
-    (s:do-hash-table (state v todo)
-      (let ((current (s:heap-extract-maximum pqueue)))
-        (when (funcall end-state-pred current)
-          (return-from a-star current))
-        (remhash current todo)
-        (setf (gethash current done) t)
-        (s:do-each (edge (funcall edges-func current))
-          (unless (or (gethash edge done)
-                      (gethash edge todo))
-            (setf (gethash edge todo) t)
-            (s:heap-insert pqueue edge)))))))
+    (s:heap-insert pqueue start-state)
+    (loop (when (zerop (length (s::heap-vector pqueue)))
+            (return))
+          (let ((current (s:heap-extract-maximum pqueue)))
+            (when (funcall end-state-pred current)
+              (return-from a-star current))
+            (setf (gethash current done) t)
+            (s:do-each (edge (funcall edges-func current))
+              (unless (or (gethash edge done)
+                          (find edge (s::heap-vector pqueue) :test #'equalp)
+                          )
+                (s:heap-insert pqueue edge)))))))
 
 (defday 22
   :test-input ""
