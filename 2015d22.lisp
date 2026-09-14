@@ -31,7 +31,7 @@ Damage: 9")
   (total-cost 0)
   (best-cost most-positive-fixnum)
   (path (list))
-  (edges (copy-list *d22spells*))
+ ; (edges (copy-list *d22spells*))
   (effects (list)))
 
 (defun d22-spell-name (spell)
@@ -43,7 +43,7 @@ Damage: 9")
                                total-cost
                                best-cost
                                path
-                               edges
+                            ;   edges
                                effects)
                state))
     (do-effects)
