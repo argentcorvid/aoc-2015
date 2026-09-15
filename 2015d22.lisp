@@ -1,4 +1,5 @@
 ;;;2015 day 22
+;;;https://www.reddit.com/r/adventofcode/comments/3xspyl/day_22_solutions/cy927kk/
 
 (in-package :aoc-2015)
 
