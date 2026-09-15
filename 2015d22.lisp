@@ -61,7 +61,7 @@ Damage: 9")
     (enemy-turn) ;; move up
     ))
 
-(defun a-star (start-state &key edges-func (end-state-pred #'endp) (cost-func #'identity))
+(defun a-star (start-state &key neighbors-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
         (done (s:dict 'equalp)))
     (s:heap-insert pqueue start-state)
@@ -71,11 +71,11 @@ Damage: 9")
             (when (funcall end-state-pred current)
               (return-from a-star current))
             (setf (gethash current done) t)
-            (s:do-each (edge (funcall edges-func current))
-              (unless (or (gethash edge done)
-                          (find edge (s::heap-vector pqueue) :test #'equalp)
+            (s:do-each (neighbor (funcall neighbors-func current))
+              (unless (or (gethash neighbor done)
+                          (find neighbor (s::heap-vector pqueue) :test #'equalp)
                           )
-                (s:heap-insert pqueue edge)))))))
+                (s:heap-insert pqueue neighbor)))))))
 
 (defday 22
   :test-input ""
