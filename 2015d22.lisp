@@ -27,8 +27,8 @@ Damage: 9")
   (def 0))
 
 (defstruct d22-game-state
-  (player (apply #'make-entity *d22player-initial*))
-  (enemy (apply #'make-entity *d22boss-initial*))
+  (player (apply #'make-d22-entity *d22player-initial*))
+  (enemy (apply #'make-d22-entity *d22boss-initial*))
   (total-cost 0)
   (best-cost most-positive-fixnum)
   (path (list))
