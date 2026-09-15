@@ -44,22 +44,50 @@ Damage: 9")
                                total-cost
                                best-cost
                                path
-                            ;   edges
                                effects)
                state))
-    (do-effects)
-    ;;player turn
-    (let (states-out)
-      (dolist (spell edges) ; *d22spells*
-        (let ((spell-cost (getf spell :cost)))
-          (unless (or (>= player-mp spell-cost)
-                      (find spell effects :key #'second))
+    (labels ((do-effects ()
+             (let ((new-effects (list))
+                   (new-def 0)
+                   (new-hp player-hp) 
+                   (new-mp player-mp)
+                   (new-enemy-hp enemy-hp))
+               (dolist (effect effects)
+                 (incf new-hp (getf effect :hp 0))
+                 (incf new-mp (getf effect :mp 0))
+                 (decf new-enemy-hp (getf effect :atk 0))
+                 (a:maxf new-def (getf effect :def 0))
+                 (when (> (getf effect :dur) 1)
+                   (let ((new-effect (copy-list effect)))
+                     (decf (getf new-effect :dur))
+                     (push new-effect new-effects))))
+               (values new-effects
+                       new-hp
+                       new-mp
+                       new-enemy-hp
+                       new-def))))
+      (let ((new-player (make-d22-entity :hp player-hp :mp player-mp))
+            (new-enemy (make-d22-entity :hp enemy-hp :atk enemy-atk))
+            states-out
+            new-effects
+            new-def)
+        (setf (values new-effects
+                      (d22-entity-hp new-player)
+                      (d22-entity-mp new-player)
+                      (d22-entity-hp new-enemy)
+                      new-def)
+              (do-effects))
+        (dolist (spell *d22spells*)
+          (let ((spell-cost (getf spell :cost)))
+            (unless (or (>= player-mp spell-cost)
+                        (find spell effects :key #'second))
 
-            (when (plusp new-hp)
-              (push new-state states-out))))))
-    (do-effects) ;; move up
-    (enemy-turn) ;; move up
-    ))
+              (when (plusp new-hp)
+                (push new-state states-out)))))
+        (do-effects) ;; move up
+
+        (enemy-turn)) ;; move up
+      )))
 
 (defun a-star (start-state &key neighbors-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
