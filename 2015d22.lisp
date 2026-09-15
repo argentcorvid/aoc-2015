@@ -18,8 +18,6 @@ Damage: 9")
         (list :name :poison :cost 173 :effect (list :dur 6 :atk 3) :inst nil)
         (list :name :recharge :cost 229 :effect (list :dur 5 :mp 101) :inst nil)))
 
-
-
 (defstruct d22-entity
   (hp 0)
   (mp 0)
@@ -91,7 +89,7 @@ Damage: 9")
             (do-effects state))
       (dolist (spell *d22spells*)
         (let ((spell-cost (getf spell :cost)))
-          (unless (or (>= player-mp spell-cost)
+          (unless (or (<= player-mp spell-cost)
                       (find spell effects :key #'second))
             (let ((new-state (make-d22-game-state :player (copy-structure new-player)
                                                   :enemy  (copy-structure new-enemy)
