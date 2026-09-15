@@ -78,26 +78,51 @@ Damage: 9")
                                path
                                effects)
                state))
-      (let* ((new-player (make-d22-entity :hp player-hp :mp player-mp))
-             (new-enemy (make-d22-entity :hp enemy-hp :atk enemy-atk))
-             states-out
-             new-effects
-             new-def)
-        (setf (values new-effects
-                      (d22-entity-hp new-player)
-                      (d22-entity-mp new-player)
-                      (d22-entity-hp new-enemy)
-                      new-def)
-              (do-effects effects))
-        (dolist (spell *d22spells*)
-          (let ((spell-cost (getf spell :cost)))
-            (unless (or (>= player-mp spell-cost)
-                        (find spell effects :key #'second))
-              (apply-spell spell)
-              (do-effects new-effects)
-              (enemy-turn)
-              (when (plusp new-hp)
-                (push new-state states-out)))))))))
+    (let* ((new-player (make-d22-entity :hp player-hp :mp player-mp))
+           (new-enemy (make-d22-entity :hp enemy-hp :atk enemy-atk))
+           states-out
+           new-effects
+           new-def)
+      (setf (values new-effects
+                    (d22-entity-hp new-player)
+                    (d22-entity-mp new-player)
+                    (d22-entity-hp new-enemy)
+                    new-def)
+            (do-effects state))
+      (dolist (spell *d22spells*)
+        (let ((spell-cost (getf spell :cost)))
+          (unless (or (>= player-mp spell-cost)
+                      (find spell effects :key #'second))
+            (let ((new-state (make-d22-game-state :player (copy-structure new-player)
+                                                  :enemy  (copy-structure new-enemy)
+                                                  :total-cost (+ total-cost spell-cost)
+                                                  :effects new-effects
+                                                  :path (cons spell path)))
+                  (inst (getf spell :inst))
+                  (effect (getf spell :effect)))
+              (let-match (((d22-game-state :player (d22-entity :hp (place new-player-hp) :mp (place new-player-mp))
+                                           :enemy (d22-entity :hp (place new-enemy-hp) :atk (place new-enemy-atk))
+                                           :total-cost (place new-total-cost)
+                                           :best-cost (place new-best-cost)
+                                           :path (place new-path)
+                                           :effects (place new-effects))
+                           new-state))
+                (incf new-player-hp (getf inst :hp 0))
+                (decf new-player-mp spell-cost)
+                (decf new-enemy-hp (getf inst :atk 0))
+                (when effect
+                  (push spell new-effects))
+                (setf (values new-effects
+                              new-player-hp
+                              new-player-mp
+                              new-enemy-hp
+                              new-def)
+                      (do-effects new-state))
+                ;(enemy-turn)
+                (when (plusp new-enemy-hp)
+                  (decf new-player-hp (max 1 (- new-enemy-atk new-def))))
+                (when (plusp new-player-hp)
+                  (push new-state states-out))))))))))
 
 (defun a-star (start-state &key neighbors-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
