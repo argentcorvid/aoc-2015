@@ -143,5 +143,5 @@ Damage: 9")
 (defday 22
   :test-input ""
   :parse ()
-  :p1 ()
+  :p1 ((a-star (make-d22-game-state) :neighbors-func #'d22-neighbors :end-state-pred (lambda (state) (zerop (d22-entity-hp (d22-game-state-enemy state)))) :cost-func #'d22-game-state-total-cost))
   :p2 ())
