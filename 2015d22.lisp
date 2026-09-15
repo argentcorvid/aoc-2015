@@ -81,13 +81,11 @@ Damage: 9")
           (let ((spell-cost (getf spell :cost)))
             (unless (or (>= player-mp spell-cost)
                         (find spell effects :key #'second))
-
+              (apply-spell spell)
+              (do-effects new-effects)
+              (enemy-turn)
               (when (plusp new-hp)
-                (push new-state states-out)))))
-        (do-effects) ;; move up
-
-        (enemy-turn)) ;; move up
-      )))
+                (push new-state states-out)))))))))
 
 (defun a-star (start-state &key neighbors-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
