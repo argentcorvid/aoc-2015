@@ -38,7 +38,39 @@ Damage: 9")
 (defun d22-spell-name (spell)
   (getf spell :name))
 
-(defun d22-transition-state (state)
+(defun do-effects (state)
+  (with-accessors ((player d22-game-state-player)
+                   (enemy d22-game-state-enemy)
+                   (effects d22-game-state-effects))
+      state
+    (with-accessors ((player-hp d22-entity-hp)
+                     (player-mp d22-entity-mp))
+        player
+      (with-accessors ((enemy-hp d22-entity-hp))
+          enemy
+        (let ((new-effects (list))
+              (new-def 0)
+              (new-hp player-hp) 
+              (new-mp player-mp)
+              (new-enemy-hp enemy-hp)
+              (effects-in effects))
+          (dolist (spell effects-in)
+            (let ((effect (getf spell :effect)))
+              (incf new-hp (getf effect :hp 0))
+              (incf new-mp (getf effect :mp 0))
+              (decf new-enemy-hp (getf effect :atk 0))
+              (a:maxf new-def (getf effect :def 0))
+              (when (> (getf effect :dur) 1)
+                (let ((new-effect (copy-list effect)))
+                  (decf (getf new-effect :dur))
+                  (push new-effect new-effects)))))
+          (values new-effects
+                  new-hp
+                  new-mp
+                  new-enemy-hp
+                  new-def))))))
+
+(defun d22-neighbors (state)
   (let-match (((d22-game-state :player (d22-entity :hp player-hp :mp player-mp)
                                :enemy (d22-entity :hp enemy-hp :atk enemy-atk)
                                total-cost
@@ -46,26 +78,6 @@ Damage: 9")
                                path
                                effects)
                state))
-    (labels ((do-effects (effects-in)
-               (let ((new-effects (list))
-                     (new-def 0)
-                     (new-hp player-hp) 
-                     (new-mp player-mp)
-                     (new-enemy-hp enemy-hp))
-                 (dolist (effect effects-in)
-                   (incf new-hp (getf effect :hp 0))
-                   (incf new-mp (getf effect :mp 0))
-                   (decf new-enemy-hp (getf effect :atk 0))
-                   (a:maxf new-def (getf effect :def 0))
-                   (when (> (getf effect :dur) 1)
-                     (let ((new-effect (copy-list effect)))
-                       (decf (getf new-effect :dur))
-                       (push new-effect new-effects))))
-                 (values new-effects
-                         new-hp
-                         new-mp
-                         new-enemy-hp
-                         new-def))))
       (let* ((new-player (make-d22-entity :hp player-hp :mp player-mp))
              (new-enemy (make-d22-entity :hp enemy-hp :atk enemy-atk))
              states-out
