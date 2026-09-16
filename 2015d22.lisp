@@ -53,16 +53,16 @@ Damage: 9")
               (new-enemy-hp enemy-hp)
               (effects-in effects))
           (dolist (spell effects-in)
-            (let ((effect (getf spell :effect)));;somewhwere
+            (let ((effect (getf spell :effect)))
               (incf new-hp (getf effect :hp 0))
               (incf new-mp (getf effect :mp 0))
               (decf new-enemy-hp (getf effect :atk 0))
               (a:maxf new-def (getf effect :def 0))
-              (when (> (getf effect :dur) 1) ;; in 
+              (when (> (getf effect :dur) 1) 
                 (let* ((new-spell (copy-list spell)))
                   (setf (getf new-spell :effect) (copy-list (getf new-spell :effect)))
                   (decf (getf (getf new-spell :effect) :dur))
-                  (push new-spell new-effects))))) ;; here
+                  (push new-spell new-effects))))) 
           (values new-effects
                   new-hp
                   new-mp
