@@ -128,8 +128,8 @@ Damage: 9")
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
         (done (s:dict 'equalp)))
     (s:heap-insert pqueue start-state)
-    (loop (when (zerop (length (s::heap-vector pqueue)))
-            (return))
+    (handler-case
+        (loop
           (let ((current (s:heap-extract-maximum pqueue)))
             (when (funcall end-state-pred current)
               (return-from a-star current))
@@ -138,7 +138,10 @@ Damage: 9")
               (unless (or (gethash neighbor done)
                           (find neighbor (s::heap-vector pqueue) :test #'equalp)
                           )
-                (s:heap-insert pqueue neighbor)))))))
+                (s:heap-insert pqueue neighbor)))))
+      (error nil
+        (fresh-line)
+        (princ "emptied the queue without finding the end state")))))
 
 (defday 22
   :test-input ""
