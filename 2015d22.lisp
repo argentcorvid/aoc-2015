@@ -91,27 +91,26 @@ Damage: 9")
               (do-effects state)))
       (dolist (spell *d22spells*)
         (let ((spell-cost (getf spell :cost)))
-          (unless (and (< player-mp spell-cost)
-                       (find spell new-effects :key (lambda (s) (getf s :name))))
+          (when (and (>= player-mp spell-cost)
+                     (not (find spell new-effects :key (a:rcurry #'getf :name))))
             (let ((spell-player (copy-structure new-player))
                   (spell-enemy  (copy-structure new-enemy))
                   (spell-total-cost (+ total-cost spell-cost))
                   (spell-effects (copy-list new-effects))
                   (spell-path (cons spell path))
-                  (spell-inst (getf spell :inst))
-                  (spell-effect (getf spell :effect)))
+                  (spell-inst (getf spell :inst)))
               (incf (d22-entity-hp spell-player) (getf spell-inst :hp 0))
               (decf (d22-entity-mp spell-player) spell-cost)
               (decf (d22-entity-hp spell-enemy) (getf spell-inst :atk 0))
-              (when spell-effect
-                (push spell spell-effects))
+              (a:when-let (spell-effect (getf spell :effect))
+                (push spell-effect spell-effects))
               (let ((spell-state (make-d22-game-state :player spell-player
                                                       :enemy spell-enemy
                                                       :total-cost spell-total-cost
                                                       :effects spell-effects
                                                       :path spell-path)))
                 (when spell-effects
-                  (setf (values spell-effects
+                  (setf (values (d22-game-state-effects spell-effects)
                                 (d22-entity-hp spell-player)
                                 (d22-entity-mp spell-player)
                                 (d22-entity-hp spell-enemy)
