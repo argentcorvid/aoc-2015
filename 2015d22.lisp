@@ -24,7 +24,8 @@ Damage: 9")
   (atk 0)
   (def 0))
 
-(defstruct d22-game-state
+(defstruct (d22-game-state
+            (:copier nil))
   (player (apply #'make-d22-entity *d22player-initial*))
   (enemy (apply #'make-d22-entity *d22boss-initial*))
   (total-cost 0)
@@ -36,6 +37,15 @@ Damage: 9")
 (defun d22-spell-name (spell)
   (getf spell :name))
 
+(defun copy-d22-game-state (s)
+  "makes deep copy of game state (instead of default shallow one)"
+  (check-type s d22-game-state)
+  (let-match (((d22-game-state player enemy total-cost path effects) s))
+    (make-d22-game-state :player (copy-structure player)
+                         :enemy (copy-structure enemy)
+                         :total-cost total-cost
+                         :path (copy-tree path)
+                         :effects (copy-tree effects))))
 (defun do-effects (state)
   (with-accessors ((player d22-game-state-player)
                    (enemy d22-game-state-enemy)
@@ -70,57 +80,56 @@ Damage: 9")
                   new-def))))))
 
 (defun d22-neighbors (state)
-  (let-match (((d22-game-state :player (d22-entity :hp player-hp :mp player-mp)
-                               :enemy (d22-entity :hp enemy-hp :atk enemy-atk)
-                               total-cost
-                               best-cost
-                               path
-                               effects)
-               state))
-    (let* ((new-player (make-d22-entity :hp player-hp :mp player-mp))
-           (new-enemy (make-d22-entity :hp enemy-hp :atk enemy-atk))
-           states-out
-           new-effects ;;
-           (new-def 0));;
-      (when effects
-        (setf (values new-effects
-                      (d22-entity-hp new-player)
-                      (d22-entity-mp new-player)
-                      (d22-entity-hp new-enemy)
-                      new-def)
-              (do-effects state)))
-      (dolist (spell *d22spells*)
-        (let ((spell-cost (getf spell :cost)))
-          (when (and (>= player-mp spell-cost)
-                     (not (find spell new-effects :key (a:rcurry #'getf :name))))
-            (let ((spell-player (copy-structure new-player))
-                  (spell-enemy  (copy-structure new-enemy))
-                  (spell-total-cost (+ total-cost spell-cost))
-                  (spell-effects (copy-list new-effects))
-                  (spell-path (cons spell path))
-                  (spell-inst (getf spell :inst)))
-              (incf (d22-entity-hp spell-player) (getf spell-inst :hp 0))
-              (decf (d22-entity-mp spell-player) spell-cost)
-              (decf (d22-entity-hp spell-enemy) (getf spell-inst :atk 0))
-              (a:when-let (spell-effect (getf spell :effect))
-                (push spell-effect spell-effects))
-              (let ((spell-state (make-d22-game-state :player spell-player
-                                                      :enemy spell-enemy
-                                                      :total-cost spell-total-cost
-                                                      :effects spell-effects
-                                                      :path spell-path)))
-                (when spell-effects
-                  (setf (values (d22-game-state-effects spell-effects)
-                                (d22-entity-hp spell-player)
-                                (d22-entity-mp spell-player)
-                                (d22-entity-hp spell-enemy)
-                                new-def)
-                        (do-effects spell-state)))
-                (when (plusp (d22-entity-hp spell-enemy))
-                  (decf (d22-entity-hp spell-player) (max 1 (- (d22-entity-atk spell-enemy) new-def))))
-                (when (plusp (d22-entity-hp spell-player))
-                  (push spell-state states-out)))))))
-      states-out)))
+  (let ((new-state (copy-d22-game-state state)))
+    (let-match (((d22-game-state :player (d22-entity :hp (place player-hp) :mp (place player-mp))
+                                 :enemy (d22-entity :hp (place enemy-hp))
+                                 :effects (place effects))
+                 new-state))
+      (let* ((new-def 0)
+             states-out) 
+        (when effects ;; do effects before player turn
+          (setf (values effects
+                        player-hp
+                        player-mp
+                        enemy-hp
+                        new-def)
+                (do-effects state)))
+        (dolist (spell *d22spells*)
+          (let-match (((plist :cost spell-cost
+                              :inst spell-inst
+                              :effect spell-effect
+                              :name spell-name)
+                       spell)) 
+            (when (and (>= player-mp spell-cost)
+                       (not (find spell-name effects :key (a:rcurry #'getf :name)))) ;for each possible spell
+              (let ((spell-state (copy-d22-game-state new-state)))
+                (let-match (((d22-game-state :player (d22-entity :hp (place spell-player-hp)
+                                                                 :mp (place spell-player-mp))
+                                             :enemy (d22-entity :hp (place spell-enemy-hp)
+                                                                :atk spell-enemy-atk)
+                                             :total-cost (place spell-total-cost)
+                                             :path (place spell-path)
+                                             :effects (place spell-effects))
+                             spell-state))
+                 ; (setf spell-path (s:append1 spell-path spell)) ;;doing equalp to prevent duplicating states in the queue takes a lot more work
+                  (incf spell-total-cost spell-cost) ;do player turn
+                  (incf spell-player-hp (getf spell-inst :hp 0))
+                  (decf spell-player-mp spell-cost)
+                  (decf spell-enemy-hp (getf spell-inst :atk 0))
+                  (when spell-effect
+                    (push (copy-tree spell) spell-effects))
+                  (when spell-effects   ; do effects before enemy turn
+                    (setf (values spell-effects
+                                  spell-player-hp
+                                  spell-player-mp
+                                  spell-enemy-hp
+                                  new-def)
+                          (do-effects spell-state)))
+                  (when (plusp spell-enemy-hp) ;;enemy turn, can't act if dead
+                    (decf spell-player-hp (max 1 (- spell-enemy-atk new-def))))
+                  (when (plusp spell-player-hp) ;don't add to neighbors if literal dead-end
+                    (push spell-state states-out)))))))
+        states-out))))
 
 (defun a-star (start-state &key neighbors-func (end-state-pred #'endp) (cost-func #'identity))
   (let ((pqueue (s:make-heap :test #'<= :key cost-func))
