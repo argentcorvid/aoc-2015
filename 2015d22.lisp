@@ -18,6 +18,8 @@ Damage: 9")
         (list :name :poison :cost 173 :effect (list :dur 6 :atk 3) :inst nil)
         (list :name :recharge :cost 229 :effect (list :dur 5 :mp 101) :inst nil)))
 
+(defvar *d22hardness* 0)
+
 (defstruct d22-entity
   (hp 0)
   (mp 0)
@@ -87,6 +89,7 @@ Damage: 9")
                  new-state))
       (let* ((new-def 0)
              states-out) 
+        (decf player-hp *d22hardness*)
         (when effects ;; do effects before player turn
           (setf (values effects
                         player-hp
@@ -153,5 +156,12 @@ Damage: 9")
 (defday 22
   :test-input ""
   :parse ()
-  :p1 ((a-star (make-d22-game-state) :neighbors-func #'d22-neighbors :end-state-pred (a:compose #'not #'plusp #'d22-entity-hp #'d22-game-state-enemy) :cost-func #'d22-game-state-total-cost))
-  :p2 ())
+  :p1 ((a-star (make-d22-game-state)
+               :neighbors-func #'d22-neighbors
+               :end-state-pred (a:compose #'not #'plusp #'d22-entity-hp #'d22-game-state-enemy)
+               :cost-func #'d22-game-state-total-cost))
+  :p2 ((let ((*d22hardness* 1))
+         (a-star (make-d22-game-state)
+                 :neighbors-func #'d22-neighbors
+                 :end-state-pred (a:compose #'not #'plusp #'d22-entity-hp #'d22-game-state-enemy)
+                 :cost-func #'d22-game-state-total-cost))))
