@@ -10,6 +10,10 @@
 (defun reg (reg-name) ; define a setf too!
   (aref *registers* (position reg-name *register-lookup :test #'string=)))
 
+(defun (setf reg) (val reg-name)
+  (setf (aref *registers* (position reg-name *register-lookup :test #'string=))
+        val))
+
 (defparameter *instruction-lookup* #("hlf" "tpl" "inc" "jmp" "jie" "jio"))
 
 (defun hlf (reg-name)
