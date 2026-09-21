@@ -104,7 +104,7 @@ Damage: 9")
                               :name spell-name)
                        spell)) 
             (when (and (>= player-mp spell-cost)
-                       (not (find spell-name effects :key (a:rcurry #'getf :name)))) ;for each possible spell
+                       (not (find spell-name effects :key #'d22-spell-name))) ;for each possible spell
               (let ((spell-state (copy-d22-game-state new-state)))
                 (let-match (((d22-game-state :player (d22-entity :hp (place spell-player-hp)
                                                                  :mp (place spell-player-mp))
@@ -114,14 +114,15 @@ Damage: 9")
                                              :path (place spell-path)
                                              :effects (place spell-effects))
                              spell-state))
-                 ; (setf spell-path (s:append1 spell-path spell)) ;;doing equalp to prevent duplicating states in the queue takes a lot more work
+                                        ; (setf spell-path (s:append1 spell-path spell)) ;;doing equalp to prevent duplicating states in the queue takes a lot more work
                   (incf spell-total-cost spell-cost) ;do player turn
                   (incf spell-player-hp (getf spell-inst :hp 0))
                   (decf spell-player-mp spell-cost)
                   (decf spell-enemy-hp (getf spell-inst :atk 0))
                   (when spell-effect
                     (push (copy-tree spell) spell-effects))
-                  (when spell-effects   ; do effects before enemy turn
+                  (decf spell-player-hp *d22hardness*)
+                  (when spell-effects ; do effects before enemy turn
                     (setf (values spell-effects
                                   spell-player-hp
                                   spell-player-mp
