@@ -8,9 +8,10 @@
 (defun clear-registers ()
   (setf *registers*
         (s:pairhash *register-names*
-                    (vector 0 0 -1)
+                    (make-array 3 :element-type 'fixnum :initial-contents '(0 0 -1))
                     (s:dict 'equal))))
 
+(s:-> register-value (string) fixnum)
 (defun register-value (reg-name)        ; define a setf too!
   (gethash reg-name *registers*))
 
@@ -19,6 +20,8 @@
         val))
 
 (defparameter *instruction-names* #("hlf" "tpl" "inc" "jmp" "jie" "jio"))
+
+(s:-> (half triple) (fixnum) fixnum)
 
 (defun half (number)
   (floor number 2))
@@ -36,12 +39,15 @@
 (defun tpl (reg-name)
   (triplef (register-value reg-name)))
 
+(s:-> inc (string) fixnum)
 (defun inc (reg-name)
   (incf (register-value reg-name)))
 
+(s:-> jmp (fixnum) fixnum)
 (defun jmp (offset)
   (incf (register-value "c") (1- offset)))
 
+(s:-> (jie jio) (string fixnum) (or null fixnum))
 (defun jie (reg-name offset)
   (when (evenp (register-value reg-name))
     (incf (register-value "c") (1- offset))))
@@ -57,9 +63,11 @@
                       *instruction-names*)
               (s:dict 'equal)))
 
+(s:-> inst-func (string) function)
 (defun inst-func (inst-name)
   (gethash inst-name *instructions*))
 
+(s:-> d23-parse-line (string) list)
 (defun d23-parse-line (line)
   (mapcar (lambda (str)
             (if (some #'digit-char-p str)
@@ -89,8 +97,8 @@ inc a"
        (fetch-execute input)
        (format t "~&~{~a: ~d~^, ~}" (a:hash-table-plist *registers*)))
   :p1-test ((day-23-p1 (day-23-parse %test-input%))
-            (= %p1-expect% (gethash "a" *registers*)))
-  :p1-test-expected 2
+            (= (the fixnum %p1-expect%) (the fixnum (gethash "a" *registers*))))
+  :p1-test-expected (the fixnum 2)
   :p2 ((clear-registers)
        (setf (register-value "a") 1)
        (fetch-execute input)
