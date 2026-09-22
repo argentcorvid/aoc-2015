@@ -3,11 +3,13 @@
 (in-package :aoc-2015)
 
 (defparameter *register-names* #("a" "b" "c"))
-(defparameter *registers*
-  (s:pairhash *register-names*
-              (vector 0 0 -1)))
+(defvar *registers*)
 
-
+(defun clear-registers ()
+  (setf *registers*
+        (s:pairhash *register-names*
+                    (vector 0 0 -1)
+                    (s:dict 'equal))))
 
 (defun register-value (reg-name)        ; define a setf too!
   (gethash reg-name *registers*))
@@ -50,9 +52,10 @@
 
 (defparameter *instructions*
   (s:pairhash *instruction-names*
-              (mapcar (lambda (fn)
+              (map 'vector (lambda (fn)
                         (symbol-function (find-symbol (string-upcase fn) :aoc-2015)))
-                      *instruction-names*)))
+                      *instruction-names*)
+              (s:dict 'equal)))
 
 (defun inst-func (inst-name)
   (gethash inst-name *instructions*))
@@ -65,15 +68,29 @@
           (ppcre:split ",? " line)))
 
 (defday 23
-  :test-input ""
-  :parse ((map 'vector #'d23-parse-line (uiop:read-file-lines input)))
-  :p1 ((catch 'halt
-           (loop
-             (incf (register-value "c"))
-             (destructuring-bind (inst-name . args)
-                 (handler-bind ((type-error (lambda (c)
-                                              (throw 'halt))))
-                     (svref input (register-value "c")))
-               (apply (inst-func inst-name) args))))
+  :test-input
+  "inc a
+jio a, +2
+tpl a
+inc a"
+  :parse ((map 'vector #'d23-parse-line (str:lines input)))
+  :p1 ((clear-registers)
+       (catch 'halt
+         (loop
+           (incf (register-value "c"))
+           (destructuring-bind (inst-name . args)
+               (handler-bind ((type-error (lambda (c)
+                                            (declare (ignore c))
+                                            (throw 'halt nil))))
+                 (svref input (register-value "c")))
+             (apply (inst-func inst-name) args))))
        (format t "~&~{~a: ~d~^, ~}" (a:hash-table-plist *registers*)))
+  :p1-test ((day-23-p1 (day-23-parse %test-input%))
+            (= %p1-expect% (gethash "a" *registers*)))
+  :p1-test-expected 2
   :p2 ())
+
+(defun day-23-p1-run ()
+  (day-23-p1 (day-23-parse (uiop:read-file-string *day23input*)))
+  (fresh-line)
+  (princ (gethash "b" *registers*)))
