@@ -67,6 +67,17 @@
                 str))
           (ppcre:split ",? " line)))
 
+(defun fetch-execute (input)
+  (catch 'halt
+    (loop
+      (incf (register-value "c"))
+      (destructuring-bind (inst-name . args)
+          (handler-bind ((type-error (lambda (c)
+                                       (declare (ignore c))
+                                       (throw 'halt nil))))
+            (svref input (register-value "c")))
+        (apply (inst-func inst-name) args)))))
+
 (defday 23
   :test-input
   "inc a
@@ -75,22 +86,22 @@ tpl a
 inc a"
   :parse ((map 'vector #'d23-parse-line (str:lines input)))
   :p1 ((clear-registers)
-       (catch 'halt
-         (loop
-           (incf (register-value "c"))
-           (destructuring-bind (inst-name . args)
-               (handler-bind ((type-error (lambda (c)
-                                            (declare (ignore c))
-                                            (throw 'halt nil))))
-                 (svref input (register-value "c")))
-             (apply (inst-func inst-name) args))))
+       (fetch-execute input)
        (format t "~&~{~a: ~d~^, ~}" (a:hash-table-plist *registers*)))
   :p1-test ((day-23-p1 (day-23-parse %test-input%))
             (= %p1-expect% (gethash "a" *registers*)))
   :p1-test-expected 2
-  :p2 ())
+  :p2 ((clear-registers)
+       (setf (register-value "a") 1)
+       (fetch-execute input)
+       (format t "~&~{~a: ~d~^, ~}" (a:hash-table-plist *registers*))))
 
 (defun day-23-p1-run ()
   (day-23-p1 (day-23-parse (uiop:read-file-string *day23input*)))
+  (fresh-line)
+  (princ (gethash "b" *registers*)))
+
+(defun day-23-p2-run ()
+  (day-23-p2 (day-23-parse (uiop:read-file-string *day23input*)))
   (fresh-line)
   (princ (gethash "b" *registers*)))
