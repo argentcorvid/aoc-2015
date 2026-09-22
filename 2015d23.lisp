@@ -5,11 +5,14 @@
 (defparameter *register-names* #("a" "b" "c"))
 (defvar *registers*)
 
-(defun clear-registers ()
+(defun set-registers (&key (a 0) (b 0) (c -1))
   (setf *registers*
         (s:pairhash *register-names*
-                    (make-array 3 :element-type 'fixnum :initial-contents '(0 0 -1))
+                    (vector a b c)
                     (s:dict 'equal))))
+
+(defun clear-registers ()
+  (set-registers))
 
 (s:-> register-value (string) fixnum)
 (defun register-value (reg-name)        ; define a setf too!
@@ -47,14 +50,16 @@
 (defun jmp (offset)
   (incf (register-value "c") (1- offset)))
 
-(s:-> (jie jio) (string fixnum) (or null fixnum))
+(s:-> (jie jio) (string fixnum) fixnum)
 (defun jie (reg-name offset)
-  (when (evenp (register-value reg-name))
-    (incf (register-value "c") (1- offset))))
+  (if (evenp (register-value reg-name))
+      (incf (register-value "c") (1- offset))
+      0))
 
 (defun jio (reg-name offset)
-  (when (= 1 (register-value reg-name))
-    (incf (register-value "c") (1- offset))))
+  (if (= 1 (register-value reg-name))
+      (incf (register-value "c") (1- offset))
+      0))
 
 (defparameter *instructions*
   (s:pairhash *instruction-names*
@@ -76,15 +81,14 @@
           (ppcre:split ",? " line)))
 
 (defun fetch-execute (input)
-  (catch 'halt
-    (loop
-      (incf (register-value "c"))
-      (destructuring-bind (inst-name . args)
-          (handler-bind ((type-error (lambda (c)
-                                       (declare (ignore c))
-                                       (throw 'halt nil))))
-            (svref input (register-value "c")))
-        (apply (inst-func inst-name) args)))))
+  (loop
+    (incf (register-value "c"))
+    (apply (lambda (inst-name &rest args)
+             (apply (inst-func inst-name) args))
+           (handler-bind ((type-error (lambda (c)
+                                        (declare (ignore c))
+                                        (return-from nil))))
+             (svref input (register-value "c"))))))
 
 (defday 23
   :test-input
@@ -99,8 +103,7 @@ inc a"
   :p1-test ((day-23-p1 (day-23-parse %test-input%))
             (= (the fixnum %p1-expect%) (the fixnum (gethash "a" *registers*))))
   :p1-test-expected (the fixnum 2)
-  :p2 ((clear-registers)
-       (setf (register-value "a") 1)
+  :p2 ((set-registers :a 1)
        (fetch-execute input)
        (format t "~&~{~a: ~d~^, ~}" (a:hash-table-plist *registers*))))
 
