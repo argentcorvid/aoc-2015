@@ -86,8 +86,8 @@
     (apply (lambda (inst-name &rest args)
              (apply (inst-func inst-name) args))
            (handler-bind ((type-error (lambda (c)
-                                        (declare (ignore c))
-                                        (return-from nil))))
+                                        (when (integerp (type-error-datum c)) ;svref index OOB, we are done.
+                                          (return-from fetch-execute)))))
              (svref input (register-value "c"))))))
 
 (defday 23
