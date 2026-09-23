@@ -15,20 +15,17 @@
               (apply #'quantum-entanglement pkg-list-b)))))
 
 (defun collect-packages (input &key part-2)
-  (loop :with heap := (s:make-heap :test #'greater-legroom-p)
+  (loop :with heap := (s:make-heap :test #'< :key #'second) ;only works when stopping after the smallest group, otherwise, use greater-legroom-p. not a problem because that is part of the requirement
+        :and n-groups := (if part-2 4 3)
+        :with required-group-weight := (/ (apply #'+ input) n-groups) ; will return integer if evenly divisible (part of requirement) if not, a fraction, which wont ever be = to the sum of any combination
         :for n :from 2 :upto (floor (length input) 2)
         :do (a:map-combinations
-             (lambda (comb &aux (others (set-difference input comb)))
+             (lambda (comb)
                (when (= (apply #'+ comb)
-                        (/ (apply #'+ others) (if part-2
-                                                  3
-                                                  2)))
-                 (s:heap-insert heap comb)))
+                        required-group-weight)
+                 (s:heap-insert heap (list comb (apply #'quantum-entanglement comb)))))
              input :length n)
-        :until (s:heap-maximum heap)
-        :finally (let ((best (s:heap-maximum heap)))
-                   (return (values best
-                                   (apply #'quantum-entanglement best))))))
+          :thereis (s:heap-maximum heap)))
 
 (defday 24
   :test-input
