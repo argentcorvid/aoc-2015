@@ -13,6 +13,22 @@
              (< (apply #'quantum-entanglement pkg-list-a)
                 (apply #'quantum-entanglement pkg-list-b))))))
 
+(defun collect-packages (input &key part-2)
+  (loop :with heap := (s:make-heap :test #'greater-legroom-p)
+        :for n :from 2 :upto (floor (length input) 2)
+        :do (a:map-combinations
+             (lambda (comb &aux (others (set-difference input comb)))
+               (when (= (apply #'+ comb)
+                        (/ (apply #'+ others) (if part-2
+                                                  3
+                                                  2)))
+                 (s:heap-insert heap comb)))
+             input :length n)
+        :until (s:heap-maximum heap)
+        :finally (let ((best (s:heap-maximum heap)))
+                   (return (values best
+                                   (apply #'quantum-entanglement best))))))
+
 (defday 24
   :test-input
   (str:lines
@@ -27,32 +43,10 @@
 10
 11")
   :parse ((mapcar #'parse-integer input))
-  :p1 ((loop :with heap := (s:make-heap :test #'greater-legroom-p)
-             :for n :from 2 :upto (floor (length input) 2)
-             :do (a:map-combinations
-                  (lambda (comb &aux (others (set-difference input comb)))
-                    (when (= (apply #'+ comb)
-                             (/ (apply #'+ others) 2))
-                      (s:heap-insert heap comb)))
-                  input :length n)
-             :until (s:heap-maximum heap)
-             :finally (let ((best (s:heap-maximum heap)))
-                        (return (values best
-                                        (apply #'quantum-entanglement best))))))
+  :p1 ((collect-packages input))
   :p1-test-expected '((11 9) 99)
   :p1-test ((day-24-p1 (day-24-parse %test-input%)))
-  :p2 ((loop :with heap := (s:make-heap :test #'greater-legroom-p)
-             :for n :from 2 :upto (floor (length input) 2)
-             :do (a:map-combinations
-                  (lambda (comb &aux (others (set-difference input comb)))
-                    (when (= (apply #'+ comb)
-                             (/ (apply #'+ others) 3))
-                      (s:heap-insert heap comb)))
-                  input :length n)
-             :until (s:heap-maximum heap)
-             :finally (let ((best (s:heap-maximum heap)))
-                        (return (values best
-                                        (apply #'quantum-entanglement best))))))
+  :p2 ((collect-packages input :part-2 t))
   :p2-test-expected '((11 4) 44)
   :p2-test ((day-24-p2 (day-24-parse %test-input%))))
 
