@@ -5,13 +5,14 @@
 (defun quantum-entanglement (&rest numbers)
   (apply #'* numbers))
 
-(defun greater-legroom-p (pkg-list-a pkg-list-b)
-  (let ((len-a (length pkg-list-a))
-        (len-b (length pkg-list-b)))
-    (or (< len-a len-b)
-        (and (= len-a len-b)
-             (< (apply #'quantum-entanglement pkg-list-a)
-                (apply #'quantum-entanglement pkg-list-b))))))
+(defun greater-legroom-p (pkg-list-a pkg-list-b
+                          &aux
+                            (len-a (length pkg-list-a))
+                            (len-b (length pkg-list-b)) )
+  (or (< len-a len-b)
+      (and (= len-a len-b)
+           (< (apply #'quantum-entanglement pkg-list-a)
+              (apply #'quantum-entanglement pkg-list-b)))))
 
 (defun collect-packages (input &key part-2)
   (loop :with heap := (s:make-heap :test #'greater-legroom-p)
