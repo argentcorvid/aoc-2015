@@ -57,8 +57,8 @@
   :p2-test ((day-24-p2 (day-24-parse %test-input%))))
 
 
-(defun day-24-p1run (input-file)
+(defun day-24-p1run (&optional (input-file *day24input*))
   (day-24-p1 (day-24-parse (uiop:read-file-lines input-file))))
 
-(defun day-24-p2run (input-file)
+(defun day-24-p2run (&optional (input-file *day24input*))
   (day-24-p2 (day-24-parse (uiop:read-file-lines input-file))))
