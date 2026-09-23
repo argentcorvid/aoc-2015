@@ -38,11 +38,27 @@
              :until (s:heap-maximum heap)
              :finally (let ((best (s:heap-maximum heap)))
                         (return (values best
-                                        (apply #'quantum-entanglement best)
-                                        heap)))))
+                                        (apply #'quantum-entanglement best))))))
   :p1-test-expected '((11 9) 99)
   :p1-test ((day-24-p1 (day-24-parse %test-input%)))
-  :p2 ())
+  :p2 ((loop :with heap := (s:make-heap :test #'greater-legroom-p)
+             :for n :from 2 :upto (floor (length input) 2)
+             :do (a:map-combinations
+                  (lambda (comb &aux (others (set-difference input comb)))
+                    (when (= (apply #'+ comb)
+                             (/ (apply #'+ others) 3))
+                      (s:heap-insert heap comb)))
+                  input :length n)
+             :until (s:heap-maximum heap)
+             :finally (let ((best (s:heap-maximum heap)))
+                        (return (values best
+                                        (apply #'quantum-entanglement best))))))
+  :p2-test-expected '((11 4) 44)
+  :p2-test ((day-24-p2 (day-24-parse %test-input%))))
+
 
 (defun day-24-p1run (input-file)
   (day-24-p1 (day-24-parse (uiop:read-file-lines input-file))))
+
+(defun day-24-p2run (input-file)
+  (day-24-p2 (day-24-parse (uiop:read-file-lines input-file))))
