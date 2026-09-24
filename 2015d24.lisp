@@ -27,6 +27,49 @@
              input :length n)
           :thereis (s:heap-maximum heap)))
 
+(iter:defmacro-clause (collect-on-heap value &optional into heap-name test (heap-test #'>=) key (key-func #'identity))
+  `(accumulate ,value
+               by (lambda (new so-far)
+                    (s:heap-insert so-far new)
+                    so-far)
+               initial-value (s:make-heap :test ,heap-test :key ,key-func)
+               into ,heap-name))
+
+(iter:defmacro-driver (iter:for combination in-combinations-of sequence
+                                &optional
+                                start (seq-start 0)
+                                end (seq-end (length sequence)) 
+                                length (combination-length (length sequence)))
+  (a:with-unique-names (index-combs)
+    (let ((kind (if generate 'generate 'for)))
+      `(progn
+         (initially (A:map-combinations
+           (lambda (comb)
+             (collecting comb into ,index-combs))
+           (s:range ,seq-start ,seq-end)
+           :length ,combination-length
+           :copy nil))
+         (,kind ,combination next
+                (if (endp ,index-combs)
+                    (terminate)
+                    (mapcar (a:curry #'elt ,sequence) (pop ,index-combs))))))))
+
+(defun collect-packages-iter (input &key part-2)
+  (iter:iter outer
+    (with n-groups = (if part-2 4 3))
+    (with required-group-weight = (/ (apply #'+ input) n-groups))
+    (for n from 2)
+    (a:map-combinations
+     (lambda (comb)
+       (when (= (apply #'+ comb)
+                required-group-weight)
+         (collect-on-heap (list comb (apply #'quantum-entanglement comb))
+                          into heap
+                          :test #'<
+                          :key #'second)))
+     input :length n)
+    (thereis (s:heap-maximum heap))))
+
 (defday 24
   :test-input
   (str:lines
