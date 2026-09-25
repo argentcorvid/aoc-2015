@@ -4,7 +4,7 @@
 
 
 (defpackage #:aoc-2015
-  (:use #:cl #:trivia #:trivia.ppcre)
+  (:use #:cl #:trivia #:trivia.ppcre #:iter)
   (:local-nicknames (#:a #:alexandria-2)
                     (#:s #:serapeum)
                     (#:jzon #:com.inuoe.jzon)))
