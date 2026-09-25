@@ -40,9 +40,10 @@
                                 &optional
                                 start (seq-start 0)
                                 end (seq-end `(length ,sequence)) 
-                                length (combination-length `(length ,sequence)))
+                                length (combination-length `(length ,sequence))
+                                result-type (type 'list))
   "Each unique combination of sequence, ala Alexandria's map-combinations"
-  (a:with-unique-names (index-combs comb-accum)
+  (a:with-unique-names (index-combs comb-accum index-out)
     (let ((kind (if iter:generate 'generate 'for)))
       `(progn
          (with ,index-combs = (let (,comb-accum)
@@ -56,7 +57,10 @@
          (,kind ,combination next
                 (if (endp ,index-combs)
                     (terminate)
-                    (map 'list (a:curry #'elt ,sequence) (pop ,index-combs))))))))
+                    (iter (for ,index-out in (pop ,index-combs))
+                      (collect (elt ,sequence ,index-out) result-type ,type))
+                   ; (map ,type (a:curry #'elt ,sequence) (pop ,index-combs))
+                 ))))))
 
 (defun collect-packages-iter (input &key part-2)
   (iter:iter outer
