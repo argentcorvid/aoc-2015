@@ -28,6 +28,7 @@
           :thereis (s:heap-maximum heap)))
 
 (iter:defmacro-clause (collect-on-heap value &optional into heap-name test (heap-test #'>=) key (key-func #'identity))
+  "collect into a heap from Serapeum"
   `(accumulate ,value
                by (lambda (new so-far)
                     (s:heap-insert so-far new)
@@ -38,36 +39,39 @@
 (iter:defmacro-driver (iter:for combination in-combinations-of sequence
                                 &optional
                                 start (seq-start 0)
-                                end (seq-end (length sequence)) 
-                                length (combination-length (length sequence)))
-  (a:with-unique-names (index-combs)
-    (let ((kind (if generate 'generate 'for)))
+                                end (seq-end `(length ,sequence)) 
+                                length (combination-length `(length ,sequence)))
+  "Each unique combination of sequence, ala Alexandria's map-combinations"
+  (a:with-unique-names (index-combs comb-accum)
+    (let ((kind (if iter:generate 'generate 'for)))
       `(progn
-         (initially (A:map-combinations
-           (lambda (comb)
-             (collecting comb into ,index-combs))
-           (s:range ,seq-start ,seq-end)
-           :length ,combination-length
-           :copy nil))
+         (with ,index-combs = (let (,comb-accum)
+                                (A:map-combinations
+                                 (lambda (comb)
+                                   (push comb ,comb-accum))
+                                 (s:range ,seq-start ,seq-end)
+                                 :length ,combination-length
+                                 :copy t)
+                                (nreverse ,comb-accum)))
          (,kind ,combination next
                 (if (endp ,index-combs)
                     (terminate)
-                    (mapcar (a:curry #'elt ,sequence) (pop ,index-combs))))))))
+                    (map 'list (a:curry #'elt ,sequence) (pop ,index-combs))))))))
 
 (defun collect-packages-iter (input &key part-2)
   (iter:iter outer
     (with n-groups = (if part-2 4 3))
     (with required-group-weight = (/ (apply #'+ input) n-groups))
     (for n from 2)
-    (a:map-combinations
-     (lambda (comb)
-       (when (= (apply #'+ comb)
-                required-group-weight)
-         (collect-on-heap (list comb (apply #'quantum-entanglement comb))
-                          into heap
-                          :test #'<
-                          :key #'second)))
-     input :length n)
+    (iter
+      (for comb in-combinations-of input :length n)
+      (when (= (apply #'+ comb)
+               required-group-weight)
+        (in outer
+            (collect-on-heap (list comb (apply #'quantum-entanglement comb))
+                             into heap
+                             :test #'<
+                             :key #'second))))
     (thereis (s:heap-maximum heap))))
 
 (defday 24
