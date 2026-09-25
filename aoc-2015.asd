@@ -10,9 +10,10 @@
   :version "0.0.1"
   :serial t
   :depends-on ("alexandria" "cl-ppcre" "str" "sb-md5" "trivia" "trivia.ppcre"
-                            "serapeum" "com.inuoe.jzon")
+                            "serapeum" "com.inuoe.jzon" "iterate")
   :components ((:file "package")
                (:file "aoc-2015")
+             ;  (:file "iter-drivers")
                (:file "2015d1")
                (:file "2015d2")
                (:file "2015d3")
