@@ -27,41 +27,6 @@
              input :length n)
           :thereis (s:heap-maximum heap)))
 
-(iter:defmacro-clause (collect-on-heap value &optional into heap-name test (heap-test #'>=) key (key-func #'identity))
-  "collect into a heap from Serapeum"
-  `(accumulate ,value
-               by (lambda (new so-far)
-                    (s:heap-insert so-far new)
-                    so-far)
-               initial-value (s:make-heap :test ,heap-test :key ,key-func)
-               into ,heap-name))
-
-(iter:defmacro-driver (iter:for combination in-combinations-of sequence
-                                &optional
-                                start (seq-start 0)
-                                end (seq-end `(length ,sequence)) 
-                                length (combination-length `(length ,sequence))
-                                result-type (type 'list))
-  "Each unique combination of sequence, ala Alexandria's map-combinations"
-  (a:with-unique-names (index-combs comb-accum index-out)
-    (let ((kind (if iter:generate 'generate 'for)))
-      `(progn
-         (with ,index-combs = (let (,comb-accum)
-                                (A:map-combinations
-                                 (lambda (comb)
-                                   (push comb ,comb-accum))
-                                 (s:range ,seq-start ,seq-end)
-                                 :length ,combination-length
-                                 :copy t)
-                                (nreverse ,comb-accum)))
-         (,kind ,combination next
-                (if (endp ,index-combs)
-                    (terminate)
-                    (iter (for ,index-out in (pop ,index-combs))
-                      (collect (elt ,sequence ,index-out) result-type ,type))
-                   ; (map ,type (a:curry #'elt ,sequence) (pop ,index-combs))
-                 ))))))
-
 (defun collect-packages-iter (input &key part-2)
   (iter:iter outer
     (with n-groups = (if part-2 4 3))
