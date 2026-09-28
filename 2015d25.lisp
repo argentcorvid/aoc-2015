@@ -4,9 +4,9 @@
 
 (defun number-to-generate (row col)
   (let* ((side-length (+ row col -1))
-         (area (floor (expt side-length 2) 2))
-         (first-on-hyp (1- area)))
-    (+ col first-on-hyp -1)))
+         (area );;; here
+         (first-on-hyp (1+ area)))
+    (+ first-on-hyp col )))
 
 (defun iterate-codes (starting-code times)
   (iter
@@ -16,6 +16,8 @@
 
 (let ((exptmod-cache (make-hash-table :test 'equalp)))
   (defun exptmod (base exp mod)
+    (when (minusp exp)
+      (error "negative exponent!"))
     (a:if-let (cached-result (gethash (vector base exp mod) exptmod-cache))
       cached-result
       (setf (gethash (vector base exp mod) exptmod-cache)
