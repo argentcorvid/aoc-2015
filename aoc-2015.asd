@@ -13,7 +13,7 @@
                             "serapeum" "com.inuoe.jzon" "iterate")
   :components ((:file "package")
                (:file "aoc-2015")
-             ;  (:file "iter-drivers")
+               (:file "iter-drivers")
                (:file "2015d1")
                (:file "2015d2")
                (:file "2015d3")
@@ -36,5 +36,7 @@
                (:file "2015d20")
                (:file "2015d21")
                (:file "2015d22")
-               (:file "2015d23")))
+               (:file "2015d23")
+               (:file "2015d24")
+               (:file "2015d25")))
                
