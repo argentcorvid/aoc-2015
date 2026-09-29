@@ -3,10 +3,12 @@
 (in-package :aoc-2015)
 
 (defun number-to-generate (row col)
-  (let* ((side-length (+ row col -1))
-         (area );;; here
-         (first-on-hyp (1+ area)))
-    (+ first-on-hyp col )))
+;;; area of previous triangle + col
+;;; or area of current - row
+  (let* ((diagonal-number (+ row col -1))
+         (area-of-prev (/ (* (1- diagonal-number) diagonal-number) 2)) ;;; here
+         )
+    (+ area-of-prev col -1)))
 
 (defun iterate-codes (starting-code times)
   (iter
