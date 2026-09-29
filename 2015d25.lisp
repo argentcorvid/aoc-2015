@@ -5,10 +5,11 @@
 (defun number-to-generate (row col)
 ;;; area of previous triangle + col
 ;;; or area of current - row
-  (let* ((diagonal-number (+ row col -1))
-         (area-of-prev (/ (* (1- diagonal-number) diagonal-number) 2)) ;;; here
+  (let* ((diagonal-number (+ row col -1)) ;; every co-ordinate on the same diagonal as given co-ordinates adds up to this
+         (area-of-prev (/ (* (1- diagonal-number) diagonal-number) 2)) ;; triangular number, because it's discrete blocks.
          )
-    (+ area-of-prev col -1)))
+    (+ area-of-prev col -1) ;; move along new diagonal to needed column, (and adjust for 1 base instead of 0?)
+    ))
 
 (defun iterate-codes (starting-code times)
   (iter
@@ -16,21 +17,17 @@
     (repeat times)
     (finally (return code))))
 
-(let ((exptmod-cache (make-hash-table :test 'equalp)))
-  (defun exptmod (base exp mod)
-    (when (minusp exp)
-      (error "negative exponent!"))
-    (a:if-let (cached-result (gethash (vector base exp mod) exptmod-cache))
-      cached-result
-      (setf (gethash (vector base exp mod) exptmod-cache)
-            (multiple-value-bind (q r)
-                (floor exp 2)
-              (cond ((zerop exp)
-                     (return-from exptmod 1))
-                    ((zerop r)
-                     (mod (expt (exptmod base q mod) 2) mod))
-                    (t
-                     (mod (* base (exptmod base (1- exp) mod)) mod))))))))
+(defun exptmod (base exp mod)
+  (when (minusp exp)
+    (error "negative exponent!"))
+  (multiple-value-bind (q r)
+      (floor exp 2)
+    (cond ((zerop exp)
+           (return-from exptmod 1))
+          ((zerop r)
+           (mod (expt (exptmod base q mod) 2) mod))
+          (t
+           (mod (* base (exptmod base (1- exp) mod)) mod)))))
 
 (defun exptmod-codes (starting-code times)
   (let ((base 252533)
@@ -49,3 +46,16 @@
                       (multiple-value-call #'number-to-generate
                         (day-25-parse (uiop:read-file-string *day25input*)))))
   :p2 ())
+
+(defun time-d25-p1 ()
+  (let ((number (multiple-value-call #'number-to-generate
+              (day-25-parse (uiop:read-file-string *day25input*))))
+        (start-code 20151125))
+    (fresh-line)
+    (princ "iterate:")
+    (fresh-line)
+    (princ (time (iterate-codes start-code number)))
+    (fresh-line)
+    (princ "exptmod:")
+    (fresh-line)
+    (princ (time (exptmod-codes start-code number)))))
