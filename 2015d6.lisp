@@ -43,9 +43,23 @@
                                    (when (minusp (aref lights x y))
                                      (setf (aref lights x y) 0))))))))))
 
+(defmacro dispatch-action (simd-action scalar-action)
+  `(iter grid-rows
+     (for row from top-row to bot-row)
+     (iter grid-cols
+       (for col from left-col by 8)
+       (repeat times)
+       (setf (simd:s16.8-aref lights row col)
+             ,simd-action)
+       (finally (iter tail
+                  (for tail-col from col)
+                  (repeat (1+ rem))
+                  (setf (aref lights row tail-col)
+                        ,scalar-action))))))
+
 (defun day-6-p1-simd (input-lines)
-  (let* ((lights (make-array '(1000 1000) :element-type 'simd:u8 :initial-element (simd:u8 0)))
-         (dlights (make-array (array-total-size lights) :element-type 'simd:u8 :displaced-to lights)))
+  (let* ((lights (make-array '(1000 1000) :element-type 'simd:s16 :initial-element (simd:s16 0)))
+         (dlights (make-array (array-total-size lights) :element-type 'simd:s16 :displaced-to lights)))
     (iter instructions
       (for raw-line in input-lines)
       (for (action left-col top-row right-col bot-row)
@@ -54,42 +68,37 @@
                (collect (if (some #'digit-char-p word)
                             (parse-integer word)
                             word))))
-      (for (values times rem) = (floor (- right-col left-col) 16))
-      (iter grid-rows
-        (for row from top-row to bot-row)
-        (case (schar action 1)
-          (#\n (iter columns-set
-                 (for col from left-col by 16)
-                 (repeat times)
-                 (setf (simd:u8.16-aref lights row col)
-                       (simd:u8.16-broadcast 1))
-                 (finally
-                  (iter set-tail
-                    (for tail-col from col)
-                    (repeat rem)
-                    (setf (aref lights row tail-col)
-                          1)))))
-          (#\f (iter columns-clr
-                 (for col from left-col by 16)
-                 (repeat times)
-                 (setf (simd:u8.16-aref lights row col)
-                       (simd:u8.16-broadcast 0))
-                 (finally
-                  (iter clr-tail
-                    (for tail-col from col)
-                    (repeat rem)
-                    (setf (aref lights row tail-col)
-                          0)))))
-          (#\o (iter columns-tgl
-                 (for col from left-col by 16)
-                 (repeat times)
-                 (setf (simd:u8.16-aref lights row col)
-                       (simd:u8.16-xor (simd:u8.16-aref lights row col)
-                                       (simd:u8.16-broadcast 1)))
-                 (finally
-                  (iter tgl-tail
-                    (for tail-col from col)
-                    (repeat rem)
-                    (setf (aref lights row tail-col)
-                          (logxor (aref lights row tail-col) 1)))))))))
-    (count 1 dlights)))
+      (for (values times rem) = (floor (- right-col left-col) 8))
+      (case (schar action 1)
+        (#\n (dispatch-action (simd:s16.8-broadcast 1) 1))
+        (#\f (dispatch-action (simd:s16.8-broadcast 0) 0))
+        (#\o (dispatch-action (simd:s16.8-xor (simd:s16.8-aref lights row col)
+                                              (simd:s16.8-broadcast 1))
+                              (logxor (aref lights row tail-col) 1)))))
+    (values (count 1 dlights)
+            lights)))
+
+(defun day-6-p2-simd (input-lines)
+  (let* ((lights (make-array '(1000 1000) :element-type 'simd:s16 :initial-element (simd:s16 0)))
+         (dlights (make-array (array-total-size lights) :element-type 'simd:s16 :displaced-to lights)))
+    (iter instructions
+      (for raw-line in input-lines)
+      (for (action left-col top-row right-col bot-row)
+           = (iter parse-instructions
+               (for word in (pick-elements (remove "turn" (s:words raw-line) :test #'string=) 0 1 2 4 5))
+               (collect (if (some #'digit-char-p word)
+                            (parse-integer word)
+                            word))))
+      (for (values times rem) = (floor (- right-col left-col) 8))
+      (case (schar action 1)
+        (#\n (dispatch-action (simd:s16.8+ (simd:s16.8-aref lights row col) 1)
+                              (+ (aref lights row col) 1)))
+        (#\f (dispatch-action (let* ((new (simd:s16.8- (simd:s16.8-aref lights row col) 1)))
+                                (simd:s16.8-if (simd:s16.8< new 0)
+                                               (simd:s16.8-broadcast 0)
+                                               new))
+                              (a:clamp (- (aref lights row col) 1) 0 32767)))
+        (#\o (dispatch-action (simd:s16.8+ (simd:s16.8-aref lights row col) 2)
+                              (+ (aref lights row col) 2)))))
+    (values (reduce #'+ dlights)
+            (reduce #'max dlights))))
