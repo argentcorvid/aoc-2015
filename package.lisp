@@ -7,4 +7,6 @@
   (:use #:cl #:trivia #:trivia.ppcre #:iter)
   (:local-nicknames (#:a #:alexandria-2)
                     (#:s #:serapeum)
-                    (#:jzon #:com.inuoe.jzon)))
+                    (#:jzon #:com.inuoe.jzon)
+                    #+arm64 (#:simd #:sb-simd-neon)
+                    #+x86-64 (#:simd #:sb-simd-avx)))
