@@ -77,6 +77,15 @@
     (values (count 1 dlights)
             lights)))
 
+(declaim (inline s8.16-max))
+(defun s8.16-max (pack-1 pack-2)
+  #+arm64 (simd:s8.16-bit-select (simd:s8.16< pack-1 pack-2)
+                                   pack-2
+                                   pack-1)
+  #+x86-64 (simd:s8.16-if (simd:s8.16< pack-1 pack-2)
+                          pack-2
+                          pack-1))
+
 (defun day-6-p2-simd (input-lines)
   (let* ((lights (make-array '(1000 1000) :element-type 'simd:s8 :initial-element (simd:s8 0)))
          (dlights (make-array (array-total-size lights) :element-type 'simd:s8 :displaced-to lights)))
@@ -106,9 +115,7 @@
           (#\n (dispatch-action (simd:s8.16+ (simd:s8.16-aref lights row col) 1)
                                 (+ (aref lights row tail-col) 1)))
           (#\f (dispatch-action (let* ((new (simd:s8.16- (simd:s8.16-aref lights row col) 1)))
-                                  (simd:s8.16-if (simd:s8.16< new 0)
-                                                 (simd:s8.16-broadcast 0)
-                                                 new))
+                                  (s8.16-max new 0))
                                 (let ((new (- (aref lights row tail-col) 1)))
                                   (if (minusp new)
                                       0
@@ -118,3 +125,13 @@
     (values (reduce #'+ dlights)
             (reduce #'max dlights)
             dlights)))
+
+(defun day-6-time (&aux (in (uiop:read-file-lines *day6input*)))
+  (fresh-line)
+  (time (princ (day-6-p1 in)))
+  (fresh-line)
+  (time (princ (day-6-p1-simd in)))
+  (fresh-line)
+  (time (princ (day-6-p2 in)))
+  (fresh-line)
+  (time (princ (day-6-p2-simd in))))
