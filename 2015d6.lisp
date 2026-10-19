@@ -86,6 +86,25 @@
                           pack-2
                           pack-1))
 
+(declaim (inline simd-sum))
+
+(defun simd-sum (arr)
+  (let* ((stride 16)
+         (darr (make-array (array-total-size arr)
+                           :displaced-to arr
+                           :element-type (array-element-type arr))))
+    (iter
+      (for idx from 0 below (length darr) by stride)
+      (for v = (simd:s8.16-row-major-aref darr idx))
+      (for low16 = (simd:s16.8-from-s8.16 v))
+      (for hi16  = (simd:s16.8-from-s8.16-hi v))
+      (for sum16 = (simd:s16.8+ low16 hi16))
+      (for low32 = (simd:s32.4-from-s16.8 sum16))
+      (for hi32  = (simd:s32.4-from-s16.8-hi sum16))
+      (for sum32 = (simd:s32.4+ low32 hi32))
+      (summing (simd:s32.4-horizontal+ sum32) into vsum)
+      (finally (return (reduce #'+ darr :start (- idx stride -1) :initial-value vsum))))))
+
 (defun day-6-p2-simd (input-lines)
   (let* ((lights (make-array '(1000 1000) :element-type 'simd:s8 :initial-element (simd:s8 0)))
          (dlights (make-array (array-total-size lights) :element-type 'simd:s8 :displaced-to lights)))
@@ -118,27 +137,9 @@
                                 (max (- (aref lights row tail-col) 1) 0)))
           (#\o (dispatch-action (simd:s8.16+ (simd:s8.16-aref lights row col) 2)
                                 (+ (aref lights row tail-col) 2))))))
-    ;(reduce #'+ dlights)
+                                        ;(reduce #'+ dlights)
     (simd-sum dlights)
     ))
-
-(declaim (inline simd-sum))
-(defun simd-sum (arr)
-  (let* ((stride 16)
-         (darr (make-array (array-total-size arr)
-                           :displaced-to arr
-                           :element-type (array-element-type arr))))
-    (iter
-      (for idx from 0 below (length darr) by stride)
-      (for v = (simd:s8.16-row-major-aref darr idx))
-      (for low16 = (simd:s16.8-from-s8.16 v))
-      (for hi16  = (simd:s16.8-from-s8.16-hi v))
-      (for sum16 = (simd:s16.8+ low16 hi16))
-      (for low32 = (simd:s32.4-from-s16.8 sum16))
-      (for hi32  = (simd:s32.4-from-s16.8-hi sum16))
-      (for sum32 = (simd:s32.4+ low32 hi32))
-      (summing (simd:s32.4-horizontal+ sum32) into vsum)
-      (finally (return (reduce #'+ darr :start (- idx stride -1) :initial-value vsum))))))
 
 (defun day-6-time (&aux (in (uiop:read-file-lines *day6input*)))
   (fresh-line)
