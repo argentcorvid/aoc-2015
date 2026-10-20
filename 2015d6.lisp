@@ -88,22 +88,35 @@
 
 (declaim (inline simd-sum))
 
-(defun simd-sum (arr)
-  (let* ((stride 16)
-         (darr (make-array (array-total-size arr)
-                           :displaced-to arr
-                           :element-type (array-element-type arr))))
-    (iter
+(defun simd-sum (darr)
+  (let* ((stride 16))
+    #+arm64 (iter
       (for idx from 0 below (length darr) by stride)
-      (for v = (simd:s8.16-row-major-aref darr idx))
-      (for low16 = (simd:s16.8-from-s8.16 v))
-      (for hi16  = (simd:s16.8-from-s8.16-hi v))
-      (for sum16 = (simd:s16.8+ low16 hi16))
-      (for low32 = (simd:s32.4-from-s16.8 sum16))
-      (for hi32  = (simd:s32.4-from-s16.8-hi sum16))
-      (for sum32 initially (simd:s32.4 0)
-           then (simd:s32.4+ low32 hi32 sum32))
-      (finally (return (reduce #'+ darr :start (- idx stride -1) :initial-value (simd:s32.4-horizontal+ sum32)))))))
+      (for v = (sb-simd-neon:s8.16-row-major-aref darr idx))
+      (for sum16 = (sb-simd-neon:s16.8+  (sb-simd-neon:s16.8-from-s8.16 v)
+                                         (sb-simd-neon:s16.8-from-s8.16-hi v)))
+      (for sum32 initially (sb-simd-neon:s32.4 0)
+           then (sb-simd-neon:s32.4+ (sb-simd-neon:s32.4-from-s16.8 sum16)
+                                     (sb-simd-neon:s32.4-from-s16.8-hi sum16)
+                                     sum32))
+      (finally (return (reduce #'+ darr
+                               :start (- idx stride -1)
+                               :initial-value (sb-simd-neon:s32.4-horizontal+ sum32)))))
+    #+x86-64 (iter
+      (for idx from 0 below (length darr) by stride)
+      (for v = (sb-simd-avx:s8.16-row-major-aref darr idx))
+      (for sum16 = (sb-simd-ssse3:s16.8-maddubs 1 v))
+      (for sum32 initially (sb-simd-avx:s32.4 0)
+           then (sb-simd-avx:s32.4+ sum32
+                                    (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpackhi sum16 0))
+                                    (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpacklo sum16 0))))
+      (finally (let* ((shift1 (sb-simd-sse2:s32.4-shuffle sum32 #b01001110)) ; 01 00 11 10 -> 1 0 3 2
+                      (int-sum32 (sb-simd-sse2:s32.4+ sum32 shift1))
+                      (shift2 (sb-simd-sse2:s32.4-shuffle int-sum32 #b00010001)) ; 00 01 00 01 -> 0 1 0 1
+                      (vec-final (sb-simd-sse2:s32.4+ int-sum32 shift2))) ; all values in vector now = sum
+                 (return (reduce #'+ darr
+                                 :start (- idx stride -1)
+                                 :initial-value (nth-value 0 (sb-simd-avx:s32.4-values vec-final)))))))))
 
 (defun day-6-p2-simd (input-lines)
   (let* ((lights (make-array '(1000 1000) :element-type 'simd:s8 :initial-element (simd:s8 0)))
