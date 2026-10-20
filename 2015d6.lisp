@@ -16,8 +16,8 @@
                (((a:compose #'intern #'string-upcase) action)
                 (#'parse-integer c1-x c1-y c2-x c2-y))
                (scanner inst)
-             (loop :for x :from c1-x :to c2-x
-                   :do (loop :for y :from c1-y :to c2-y
+             (loop :for x :of-type (unsigned-byte 16) :from c1-x :to c2-x
+                   :do (loop :for y :of-type (unsigned-byte 16) :from c1-y :to c2-y
                              :do (setf (sbit lights x y)
                                        (case action
                                          (e (case (sbit lights x y)
@@ -32,27 +32,64 @@
                (((a:compose #'intern #'string-upcase) action)
                 (#'parse-integer c1-x c1-y c2-x c2-y))
                (scanner inst)
+             (declare (simple-string inst))
              (let ((delta (case action
                             (e 2)
                             (n 1)
                             (f -1))))
-               (loop :for x :from c1-x :to c2-x
-                     :do (loop :for y :from c1-y :to c2-y
+               (loop :for x :of-type (unsigned-byte 16) :from c1-x :to c2-x
+                     :do (loop :for y :of-type (unsigned-byte 16) :from c1-y :to c2-y 
                                :do (incf (aref lights x y)
                                          delta)
                                    (when (minusp (aref lights x y))
                                      (setf (aref lights x y) 0))))))))))
 
+(declaim (inline simd-sum))
+
+(defun simd-sum (darr)
+  (declare ((vector simd:s8) darr))
+  (let* ((stride 16))
+    #+arm64 (iter
+              (for idx from 0 below (length darr) by stride)
+              (for v = (sb-simd-neon:s8.16-row-major-aref darr idx))
+              (for sum16 = (sb-simd-neon:s16.8+  (sb-simd-neon:s16.8-from-s8.16 v)
+                                                 (sb-simd-neon:s16.8-from-s8.16-hi v)))
+              (for sum32 initially (sb-simd-neon:s32.4 0)
+                   then (sb-simd-neon:s32.4+ (sb-simd-neon:s32.4-from-s16.8 sum16)
+                                             (sb-simd-neon:s32.4-from-s16.8-hi sum16)
+                                             sum32))
+              (finally (return (reduce #'+ darr
+                                       :start (- idx stride -1)
+                                       :initial-value (sb-simd-neon:s32.4-horizontal+ sum32)))))
+    #+x86-64 (iter
+               (for idx from 0 below (length darr) by stride)
+               (for v = (sb-simd-avx:s8.16-row-major-aref darr idx))
+               (for sum16 = (sb-simd-ssse3:s16.8-maddubs 1 v))
+               (for sum32 initially (sb-simd-avx:s32.4 0)
+                    then (sb-simd-avx:s32.4+ sum32
+                                             (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpackhi sum16 0))
+                                             (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpacklo sum16 0))))
+               (finally (let* ((int-sum32 (sb-simd-sse2:s32.4+
+                                           sum32
+                                           (sb-simd-sse2:s32.4-shuffle sum32 #4r1032))) ; 01 00 11 10 -> 1 0 3 2
+                               (vec-final (sb-simd-sse2:s32.4+
+                                           int-sum32
+                                           (sb-simd-sse2:s32.4-shuffle int-sum32 #4r0101)))) ; 00 01 00 01 -> 0 1 0 1
+                                        ; all values in vec-final now = sum
+                          (return (reduce #'+ darr
+                                          :start (- idx stride -1)
+                                          :initial-value (nth-value 0 (sb-simd-avx:s32.4-values vec-final)))))))))
+
 (defun day-6-p1-simd (input-lines)
-  (let* ((lights (make-array '(1000 1000) :element-type 'simd:u8 :initial-element (simd:u8 0)))
-         (dlights (make-array (array-total-size lights) :element-type 'simd:u8 :displaced-to lights)))
+  (let* ((lights (make-array '(1000 1000) :element-type 'simd:s8 :initial-element (simd:s8 0)))
+         (dlights (make-array (array-total-size lights) :element-type 'simd:s8 :displaced-to lights)))
     (macrolet ((dispatch-action (simd-action scalar-action)
                  `(iter grid-rows
                     (for row from top-row to bot-row)
                     (iter grid-cols
                       (for col from left-col by 16)
                       (repeat times)
-                      (setf (simd:u8.16-aref lights row col)
+                      (setf (simd:s8.16-aref lights row col)
                             ,simd-action)
                       (finally (iter tail
                                  (for tail-col from col)
@@ -67,56 +104,27 @@
                  (collect (if (some #'digit-char-p word)
                               (parse-integer word)
                               word))))
-        (for (values times rem) = (floor (- right-col left-col) 16))
+                                        ; (declare ((unsigned-byte 16) left-col top-row right-col bot-row))
+        (for (values times rem) = (floor (- (the (unsigned-byte 16) right-col) (the (unsigned-byte 16) left-col)) 16))
         (case (schar action 1)
-          (#\n (dispatch-action (simd:u8.16-broadcast 1) 1))
-          (#\f (dispatch-action (simd:u8.16-broadcast 0) 0))
-          (#\o (dispatch-action (simd:u8.16-xor (simd:u8.16-aref lights row col)
-                                                (simd:u8.16-broadcast 1))
+          (#\n (dispatch-action (simd:s8.16-broadcast 1) 1))
+          (#\f (dispatch-action (simd:s8.16-broadcast 0) 0))
+          (#\o (dispatch-action (simd:s8.16-xor (simd:s8.16-aref lights row col)
+                                                (simd:s8.16-broadcast 1))
                                 (logxor (aref lights row tail-col) 1))))))
-    (values (count 1 dlights)
+    (values (simd-sum dlights)
             lights)))
 
 (declaim (inline s8.16-max))
 (defun s8.16-max (pack-1 pack-2)
+  (declare (simd:s8.16 pack-1 pack-2))
   #+arm64 (simd:s8.16-bit-select (simd:s8.16< pack-1 pack-2)
-                                   pack-2
-                                   pack-1)
+                                 pack-2
+                                 pack-1)
   #+x86-64 (simd:s8.16-if (simd:s8.16< pack-1 pack-2)
                           pack-2
                           pack-1))
 
-(declaim (inline simd-sum))
-
-(defun simd-sum (darr)
-  (let* ((stride 16))
-    #+arm64 (iter
-      (for idx from 0 below (length darr) by stride)
-      (for v = (sb-simd-neon:s8.16-row-major-aref darr idx))
-      (for sum16 = (sb-simd-neon:s16.8+  (sb-simd-neon:s16.8-from-s8.16 v)
-                                         (sb-simd-neon:s16.8-from-s8.16-hi v)))
-      (for sum32 initially (sb-simd-neon:s32.4 0)
-           then (sb-simd-neon:s32.4+ (sb-simd-neon:s32.4-from-s16.8 sum16)
-                                     (sb-simd-neon:s32.4-from-s16.8-hi sum16)
-                                     sum32))
-      (finally (return (reduce #'+ darr
-                               :start (- idx stride -1)
-                               :initial-value (sb-simd-neon:s32.4-horizontal+ sum32)))))
-    #+x86-64 (iter
-      (for idx from 0 below (length darr) by stride)
-      (for v = (sb-simd-avx:s8.16-row-major-aref darr idx))
-      (for sum16 = (sb-simd-ssse3:s16.8-maddubs 1 v))
-      (for sum32 initially (sb-simd-avx:s32.4 0)
-           then (sb-simd-avx:s32.4+ sum32
-                                    (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpackhi sum16 0))
-                                    (sb-simd-avx:s32.4! (sb-simd-avx:s16.8-unpacklo sum16 0))))
-      (finally (let* ((shift1 (sb-simd-sse2:s32.4-shuffle sum32 #b01001110)) ; 01 00 11 10 -> 1 0 3 2
-                      (int-sum32 (sb-simd-sse2:s32.4+ sum32 shift1))
-                      (shift2 (sb-simd-sse2:s32.4-shuffle int-sum32 #b00010001)) ; 00 01 00 01 -> 0 1 0 1
-                      (vec-final (sb-simd-sse2:s32.4+ int-sum32 shift2))) ; all values in vector now = sum
-                 (return (reduce #'+ darr
-                                 :start (- idx stride -1)
-                                 :initial-value (nth-value 0 (sb-simd-avx:s32.4-values vec-final)))))))))
 
 (defun day-6-p2-simd (input-lines)
   (let* ((lights (make-array '(1000 1000) :element-type 'simd:s8 :initial-element (simd:s8 0)))
@@ -147,7 +155,7 @@
         (case (schar action 1)
           (#\n (dispatch-action (simd:s8.16+ (simd:s8.16-aref lights row col) 1)
                                 (+ (aref lights row tail-col) 1)))
-          (#\f (dispatch-action (s8.16-max (simd:s8.16- (simd:s8.16-aref lights row col) 1) 0)
+          (#\f (dispatch-action (s8.16-max (simd:s8.16- (simd:s8.16-aref lights row col) 1) (simd:s8.16 0))
                                 (max (- (aref lights row tail-col) 1) 0)))
           (#\o (dispatch-action (simd:s8.16+ (simd:s8.16-aref lights row col) 2)
                                 (+ (aref lights row tail-col) 2))))))
